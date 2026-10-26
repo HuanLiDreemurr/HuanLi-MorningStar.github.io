@@ -481,8 +481,8 @@ export function pre1Shots(env) {
           ctx.circle(r.x + r.w - 104 + 28 + 48 * vision(t), r.y + 61, 23, { color: 'sub', width: 1.5, alpha: 0.8 * bl });
           ctx.text(UI.blind, r.x + r.w, r.y + 112, { size: 15, font: 'mono', color: 'sub', align: 'right', alpha: prog(bl, 0.6, 1) });
         }
-        say(ctx, 26, t, 176, 214, { out: T(27) + 0.4 });
-        say(ctx, 27, t, 176, 284);
+        say(ctx, 26, t, 300, 214, { out: T(27) + 0.4 });                   // (further in: this framing cuts the page's left margin)
+        say(ctx, 27, t, 300, 284);
         cur(ctx, [
           { t: tOff, x: A.vis[0] - 22, y: A.vis[1] + 6, click: true }, { t: b(10.3), x: A.vis[0] - 60, y: A.vis[1] + 26 },
           { t: tOn1, x: A.vis[0] - 22, y: A.vis[1] + 6, click: true }, { t: b(11.5), x: A.vis[0] - 44, y: A.vis[1] + 20 },      // (it hovers by the switch: this row only)
