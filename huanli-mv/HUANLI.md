@@ -32,7 +32,19 @@ node tools/placeholder_lyrics.mjs        # 用 "lyric 07" 这样的占位文字�
 node export/export.mjs --end 29.42 --width 1920 --height 1080 --fps 30 --codec libx264 --cq 22 --out out/segment1.mp4
 ```
 
-没有音频文件时导出会自动配一条静音音轨。把自己的歌曲 `.wav` 和歌词 `.lrc` 放进 `音頻&歌詞/` 之后，
+没有音频文件时导出会自动配一条静音音轨。
+
+**音频对齐**：制作时用的 MP3（320 kbps，211.96 秒）和原作者的录音是同一版，只是开头的空白短了 0.1554 秒
+（与 `data/audio_features.json` 的响度曲线逐帧比对，全曲偏移一致）。所以转成 wav 时在前面补 6852 个采样的静音，
+`timing.offset` 保持 0：
+
+```bash
+ffmpeg -i 你的.mp3 -af "adelay=6852S:all=1" -ar 44100 -c:a pcm_s16le "音頻&歌詞/Mili - world.execute (me) ;.wav"
+```
+
+**歌词**：手上的歌词和原作的时间表从 0:45 起有出入（25 行缺、21 行用词不同），完整的歌词文件要和时间表对上才能直接放进 `音頻&歌詞/`。
+在那之前把它放在 `音頻&歌詞/partial/`，用 `node tools/placeholder_lyrics.mjs "音頻&歌詞/partial/lyrics.txt"` 生成预览用的歌词：
+对得上的行用真歌词，其余用占位文字。把自己的歌曲 `.wav` 和歌词 `.lrc` 放进 `音頻&歌詞/` 之后，
 再导出就会用真正的歌词并带上声音（`tools/fill_lyrics.mjs` 会覆盖占位歌词）。
 
 ## 发布时的署名
