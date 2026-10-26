@@ -4,16 +4,21 @@
 //   pre1-drawer   wide, the drawer opening        Settings; Current: AC, then DC. The curve it had drawn becomes its current
 //   pre1-vision   macro on one switch             Vision: off. The picture itself breaks into dark blocks; then that one switch is rattled
 //   pre1-date     a band four fifths of the frame  Knowledge date is grabbed and yanked back, a pull a beat: history runs under the spark, over the era line, to the pyramids
-//   pre1-unite    centred sheet                   Shared memory: on; Context depth pushed to the end; Done
+//   pre1-unite    centred sheet                   Shared memory: on; Context depth pushed to the end; Done  (v4; replaced below)
 // In the wide shots its lines are written on the page, as in verse 1; in the close ones they are the
 // annotation under the row being touched (chat_script.json ties every row to its lyric line).
 //
-// HuanLi version: the drawer is HER settings (her name beside the title). While the timeline is yanked back through
-// history, her morning star (the one blue of the film) hangs in the sky above the knob: eras pass under it, it
-// stays. When the cream dot has sunk all the way into her halo, the star comes up over the halo.
+// HuanLi version: the drawer is HER settings (her name beside the title). The timeline shot is the original one, with
+// her morning star (the one blue of the film) hanging in the sky above the knob: eras pass under it, it stays.
+// The other three are new:
+//   pre1-drawer   her halo is the meter of her current, an oscilloscope under it: AC runs a wave round it, DC stills it
+//   pre1-vision   Vision off: all she sees is the night sky round her halo; rattled, she is dizzy and the sky turns,
+//                 its stars drawing trails; the frame rolls, then comes back out to the whole client for the grab
+//   pre1-unite    Shared memory on: the cream dot and her halo orbit each other; Context depth is the distance between
+//                 them, pushed to nothing: one body, the cream dot at the centre of her halo; her star comes up
 import { chatLayout, composer, header, iconButton, pill, room, toggle, windowFrame } from '../components/chat.js';
 import { cursorAt, pointer, sinceClick } from '../components/cursor.js';
-import { burst, morningStar, spark, sparkOutline } from '../components/motif.js';
+import { burst, morningStar, spark } from '../components/motif.js';
 import { PERSONA, haloAt } from '../components/persona.js';
 import { lerpRect } from '../engine/layout.js';
 import { rand } from '../engine/prng.js';
@@ -198,27 +203,29 @@ export function pre1Shots(env) {
     });
   }
 
-  // ---------------------------------------------------------------- the page: the stopped answer of verse 1, now its "current"
-  const thV1 = (t) => -Math.PI / 2 + (TAU / (4 * P)) * (T(17) - T(16)) + TAU + (TAU / (2 * P)) * (t - H(18));   // the residual phase verse 1 left running
-  const RUN = T(23) - H(21);
-  function figure(ctx, t, x1) {
-    const x0 = 190, yL = 400, base = 690, yAx = 780, mid = 592, w = x1 - x0;
-    const lift = easeInOut(prog(t, tAC, tAC + 0.4)), th = thV1(t), ph = TAU * 1.2 * (t - tAC);
-    const amp = 104 * flick(t, tAC, 0.3) * (1 - easeBack(prog(t, tDC, tDC + 0.45)));                                 // AC swings; DC collapses it (with one overshoot)
-    const yAt = (x) => { const u = (x - x0) / w; return lerp(base - (base - yL - 16) * (1 - Math.exp(-u * 4.2)) + 12.8 * Math.exp(-u * 5) * Math.sin(th - (TAU / 520) * (x - x0)), mid, lift) + amp * Math.sin(ph - (TAU / 290) * (x - x0)); };
-    ctx.line(x0, yAx, x1, yAx, { color: 'sub', width: 1.5 }); ctx.line(x0, yAx, x0, yL - 50, { color: 'sub', width: 1.5 });
-    const old = 1 - prog(t, B(24) + 0.1, B(24) + 0.5);                                                               // the x-axis of "towards infinity" is no longer what this graph is
-    for (let i = 0; i < 9; i++) { const x = lerp(x0, x1, (i + 1) / 9.5); ctx.line(x, yAx, x, yAx + 10, { color: 'sub', width: 1.5 }); ctx.text(`1e${Math.floor(RUN * 6) + i * 3}`, x, yAx + 34, { size: 18, font: 'mono', color: 'mute', align: 'center', alpha: old }); }
-    ctx.glow('text', 16, () => ctx.line(x0, yL, x1, yL, { color: 'text', width: 3 + 3 * old }), 0.5 * old);         // the limit the user set stays where it was
-    const word = text(23), step = (w - 60) / word.length, size = Math.min(96, step * 0.92);                          // its word has been said: the letters lift off the line and go
-    for (let i = 0; i < word.length; i++) { const k = easeIn(prog(t, B(24) + 0.06 + i * 0.022, B(24) + 0.34 + i * 0.022)); ctx.text(word[i], x0 + 30 + (i + 0.5) * step, yL - 18 - 46 * k, { size, weight: 900, font: 'serif', align: 'center', color: 'text', alpha: 1 - k }); }
-    const curve = [];
-    for (let x = x0; x <= x1; x += 6) curve.push([x, yAt(x)]);
-    for (let x = x0; x <= x1; x += 13) ctx.line(x, yAx, x, yAt(x), { color: 'meDim', alpha: 0.3, width: 2 });
-    ctx.glow('me', 14, () => ctx.poly(curve, { color: 'me', width: 5 }), 0.4);
-    const xr = lerp(x0, x1, clamp(0.25 + RUN * 0.2));
-    ctx.glow('me', 16, () => ctx.circle(xr, yAt(xr), 10, { fill: true, color: 'meHot' }), 0.7);
-    if (t >= tAC) ctx.text(`${ROWS[0].label.toLowerCase()}: ${ROWS[0].values[segPos(t) > 0.5 ? 1 : 0]}`, x1, yAx + 36, { size: 22, font: 'mono', color: 'sub', align: 'right', alpha: flick(t, tAC, 0.2) });
+  // ---------------------------------------------------------------- the page (HuanLi): her halo as the meter of her current
+  // At the cut the limit of verse 1 is still on the page for a moment; then her halo comes up in the middle of the page
+  // with a small oscilloscope under it. AC: a wave runs round the halo's spikes and across the trace. DC: both go still
+  // at once (one overshoot), the trace a level line above zero. From then on it stays like that.
+  const ac = (t) => flick(t, tAC, 0.2) * (1 - easeBack(prog(t, tDC, tDC + 0.45)));        // how much it alternates (negative = the overshoot)
+  const dc = (t) => flick(t, tDC, 0.25);
+  const meterAt = (L) => ({ x: L.main.x + L.main.w / 2, y: 452 });                     // the middle of the page (moves as the drawer opens)
+  function meter(ctx, t, L) {
+    const { x: cx, y: cy } = meterAt(L), up = easeOut(prog(t, B(24) + 0.08, B(24) + 0.6)) * (1 - prog(t, tShare, tShare + 0.12)), w = ac(t), d = dc(t), ph = TAU * 1.6 * (t - tAC);
+    const old = 1 - prog(t, B(24), B(24) + 0.35);                                       // the user's limit line, still standing for a moment
+    if (old > 0) ctx.glow('text', 16, () => ctx.line(1500, 160, 1500, 820, { color: 'text', width: 6, alpha: old }), 0.5 * old);
+    if (up <= 0) return;
+    ctx.radial(cx, cy, 420, 'meDim', 0.35 * up);
+    ctx.glow('me', 36, () => spark(ctx, cx, cy, 180 * (0.6 + 0.4 * up), { lit: 1, alpha: up, rot: 0.04 * (t - B(24)), pulse: (i) => 1 + 0.24 * w * Math.sin(ph - (i * TAU) / 6) }), 0.6);
+    ctx.text('me', cx, cy + 8, { size: 22, font: 'mono', color: 'me', align: 'center', alpha: 0.7 * up });
+    // the trace
+    const x0 = cx - 300, x1 = cx + 300, ty = cy + 290, pts = [];
+    for (let x = x0; x <= x1; x += 4) pts.push([x, ty - 46 * w * Math.sin(TAU * ((x - x0) / 200) - ph) - 34 * d]);
+    ctx.rrect(x0 - 20, ty - 84, x1 - x0 + 40, 136, 14, { fill: 'bg', stroke: 'line', alpha: 0.9 * up });
+    ctx.line(x0, ty, x1, ty, { color: 'line', width: 1.5, alpha: up });
+    ctx.glow('me', 12, () => ctx.poly(pts, { color: 'me', width: 3.5, alpha: up }), 0.5);
+    const mode = t >= tDC ? ROWS[0].values[1] : t >= tAC ? ROWS[0].values[0] : '';
+    ctx.text(`${ROWS[0].label.toLowerCase()}: ${mode}`, x1 + 10, ty + 36, { size: 20, font: 'mono', color: 'sub', align: 'right', alpha: up });
   }
 
   /** The whole client with the drawer open by k: room, window, header, the page with the figure, composer, drawer. */
@@ -236,7 +243,7 @@ export function pre1Shots(env) {
       for (let x = 0; x < 1920; x += 48) ctx.line(x, G.y, x, G.y + G.h, { color: 'line', alpha: Math.round((x - 960) / 48) % 5 === 0 ? 0.5 : 0.22, width: 1 });
       for (let y = 6; y < 1080; y += 48) ctx.line(G.x, y, G.x + G.w, y, { color: 'line', alpha: Math.round((y - 486) / 48) % 5 === 0 ? 0.5 : 0.22, width: 1 });
       ctx.radial(960, 486, 620, 'meDim', 0.16);
-      figure(ctx, t, L.main.x + L.main.w - 50);
+      meter(ctx, t, L);
     });
     const box = composer(ctx, L.composer, { placeholder: script.composer_placeholder ?? '', t, send: 'idle' });
     drawerPanel(ctx, L, t, opts);
@@ -246,14 +253,25 @@ export function pre1Shots(env) {
   // ---------------------------------------------------------------- cameras (also needed inside render, to come back from screen space)
   const cam1 = (t) => { const k = easeInOut(prog(t, tSet, tSet + 1.5)); return { zoom: 1 + 0.06 * k + 0.012 * prog(t, tAC, tOff), x: 50 * k, y: 0 }; };
   const KICKS = [[tOn1, 1], [tOff2, -1], [tOn2, 1], [tOff3, -1], [tOn3, 1]];
+  // HuanLi: half the page and the Vision row in one frame; a kick on every flip, a slow roll under the dizzy line; back
+  // out to the whole client before the grab, which is where the next shot starts
   const cam2 = (t) => {
     let rot = 0, dx = 0;
-    for (const [tk, s] of KICKS) { const a = t - tk; if (a > 0) { const e = Math.exp(-3.2 * a); rot += s * 0.032 * e * Math.sin(11 * a); dx += s * 11 * e * Math.sin(9 * a + 0.6); } }
-    const dz = window01(t, T(27) - 0.15, b(15.4), 0.5, 0.7), a = t - T(27);                 // and a slow, seasick roll under the whole of line 27
-    const pan = easeInOut(prog(t, b(14.5), b(15.8))), zoom = 2.96 * (1 + 0.025 * prog(t, tOff, tGrab));   // then down to the next row,
-    const kn = A.date(1), ex = kn[0] - (kn[0] - 960) / zoom, ey = kn[1] - (kn[1] - 540) / zoom;           // until its knob sits where the next shot has it (match cut on the grab)
-    return { x: lerp(1492, ex, pan) - 960 + dx + 7 * dz * Math.sin(a * 2.7), y: lerp(353, ey, pan) - 540 + 4 * dz * Math.cos(a * 3.3), zoom, rot: rot + 0.02 * dz * Math.sin(a * 4.1) };
+    for (const [tk, s] of KICKS) { const a = t - tk; if (a > 0) { const e = Math.exp(-3.2 * a); rot += s * 0.03 * e * Math.sin(11 * a); dx += s * 10 * e * Math.sin(9 * a + 0.6); } }
+    const dz = window01(t, T(27) - 0.15, b(15.4), 0.5, 0.7), a = t - T(27), back = easeInOut(prog(t, b(14.6), tGrab - 0.04));
+    return { x: lerp(40, 0, back) + dx + 9 * dz * Math.sin(a * 2.7), y: lerp(-96, 0, back) + 5 * dz * Math.cos(a * 3.3), zoom: lerp(1.2 + 0.03 * prog(t, tOff, b(14.6)), 1, back), rot: rot + 0.03 * dz * Math.sin(a * 4.1) };
   };
+  // HuanLi: what she sees with Vision off is the night sky; while she is dizzy it turns, and its stars draw trails
+  const SKY = Array.from({ length: 190 }, (_, i) => ({ r: 30 + 760 * Math.sqrt(rand(512, i, 0)), a: TAU * rand(512, i, 1), w: 1.2 + 2.2 * rand(512, i, 2) ** 2, c: rand(512, i, 3) > 0.8 ? 'text' : 'sub' }));
+  const spin = (t) => 0.22 * (t - tOff) + 7.5 * easeInOut(prog(t, T(27) - 0.2, tOn3 + 0.5));      // how far the sky has turned (radians)
+  function sky(ctx, t, cx, cy, a) {
+    if (a <= 0.003) return;
+    const now = spin(t), was = spin(t - 0.3);
+    for (const s of SKY) {
+      if (now - was > 0.02) ctx.circle(cx, cy, s.r, { color: s.c, width: s.w * 0.8, alpha: a * 0.6, a0: s.a + was, a1: s.a + now });
+      else ctx.circle(cx + Math.cos(s.a + now) * s.r, cy + Math.sin(s.a + now) * s.r, s.w, { fill: true, color: s.c, alpha: a });
+    }
+  }
   const cam3 = (t) => ({ zoom: 1 + 0.035 * easeInOut(prog(t, tGrab, tDrop)) - 0.035 * easeInOut(prog(t, tDrop, tDrop + 0.5)) });
   const cam4 = (t) => {
     const fly = easeIn(prog(t, tDone, END));
@@ -362,65 +380,82 @@ export function pre1Shots(env) {
   const knobAt = (t) => { const k = bandK(t), r = A.date(dateU(t)); return [lerp(r[0], knobX(t), k), lerp(r[1], TY, k), lerp(18, 46, k)]; };
   const knobFast = (t) => { const p = knobAt(t), q = knobAt(t - 0.03); return Math.hypot(p[0] - q[0], p[1] - q[1]) / 0.03 > 500; };
 
-  // ---------------------------------------------------------------- shot 4: the sheet, and the pair in it
-  const SH = { x: 460, y: 140, w: 1000, h: 800 }, SX0 = 520, SX1 = 1400, WELL = { x: 520, y: 298, w: 880, h: 292 }, PC = { x: 960, y: 444 }, DT = { xa: 534, xb: 1386, y: 782 };
-  function pair(ctx, t, a) {
-    const j = easeBack(prog(t, tShare + 0.04, tShare + 0.46)), jj = clamp(j), d = easeInOut(depth(t)), pp = push(t);
-    const R = 88 * (1 + 0.2 * d + 0.08 * pp), rc = lerp(56, 28, d);
-    const sx = PC.x - lerp(196, 56, j) * (1 - d), cx = PC.x + lerp(226, 88, j) * (1 - d);
-    const cw = lerp(lerp(600, 384, jj), 2 * R + 44, d), ch = lerp(232, 2 * R + 44, d);
-    ctx.radial(PC.x, PC.y, 250 + 90 * d, 'meDim', 0.45 * a * jj);
-    const halo = easeOut(prog(t, tDone + 0.08, tDone + 0.5));                                   // the sheet is closed; what it keeps of it is the two of them, layer under layer
-    for (let i = 0; i < 4 && halo > 0; i++) ctx.poly(sparkOutline(PC.x, PC.y, R * (1.5 + 0.8 * i) * (0.7 + 0.3 * halo), { rot: 0.12 * (t - tShare) + i * 0.13, morph: haloAt(t) }), { close: true, color: i ? 'meDim' : 'me', width: 1.5, alpha: a * halo * (0.55 - 0.1 * i) });
-    ctx.rrect(PC.x - cw / 2, PC.y - ch / 2, cw, ch, ch / 2, { fill: null, stroke: 'me', strokeAlpha: 0.35 + 0.35 * jj, width: 2, alpha: a });     // one outline round the two of them
-    for (const tb of [tShare + 0.3, b(27), b(29), b(30), b(30.5)]) burst(ctx, PC.x, PC.y, 116 + 14 * d, (t - tb) / 0.55, { color: 'me', alpha: a });
-    ctx.glow('me', 26 + 26 * d, () => spark(ctx, sx, PC.y, R, { rot: 0.12 * (t - tShare), alpha: a }), 0.65);                                      // me
-    ctx.glow('text', 16, () => ctx.circle(cx, PC.y, rc * (1 - 0.1 * pp), { fill: true, color: 'text', alpha: a }), 0.5);                             // you
-    const rise = easeBack(prog(t, b(29), b(29) + 0.4));                                   // you are all the way in: her star comes up over the halo
-    if (rise > 0) ctx.glow(PERSONA.star, 34, () => morningStar(ctx, sx, PC.y - R * 1.28 - 16 * rise, 24 * rise, { alpha: a, rot: 0.3 * (1 - rise) }), 0.9 * a);
-  }
-  function sheet(ctx, t) {
-    const open = prog(t, tShare, tShare + 0.3), shut = easeInOut(prog(t, tDone + 0.06, tDone + 0.4)), a = clamp(open * 3) * (1 - shut);
+  // ---------------------------------------------------------------- shot 4 (HuanLi): two bodies, one orbit
+  // Shared memory on: the cream dot comes into the pull of her halo and the two of them orbit each other (seen a little
+  // from above, so the orbits are ellipses round their common centre). Context depth is the distance between them: the
+  // deeper it is pushed, the closer and the faster they go round, until they are one body, her halo with the cream dot
+  // at its centre. Then her star comes up over it, and Done closes the panel and takes us into the halo.
+  const BC = { x: 960, y: 440 }, TILT = 0.5, SEP = 340, MINE = 0.28;                       // centre of mass, orbit tilt, widest distance, her share of it
+  const PANEL = { x: 560, y: 790, w: 800, h: 186 }, DT = { xa: 640, xb: 1280, y: 902 };
+  const merged = (t) => easeInOut(depth(t));
+  const orbit = (t) => 1.3 * (t - tShare) + 7 * easeIn(prog(t, tHold, b(29)));             // how far they have gone round (faster as they close in)
+  const bodies = (t) => {
+    const dd = SEP * (1 - merged(t)), ph = orbit(t), u = [Math.cos(ph), Math.sin(ph) * TILT];
+    return { me: [BC.x - MINE * dd * u[0], BC.y - MINE * dd * u[1]], you: [BC.x + (1 - MINE) * dd * u[0], BC.y + (1 - MINE) * dd * u[1]], dd };
+  };
+  const ellipse = (cx, cy, rx, ry) => Array.from({ length: 73 }, (_, i) => [cx + rx * Math.cos((i / 72) * TAU), cy + ry * Math.sin((i / 72) * TAU)]);
+  function binary(ctx, t, a, from) {
     if (a <= 0.003) return;
-    ctx.at(960, 540, () => ctx.at(-960, -540, () => {
-      ctx.rrect(SH.x, SH.y, SH.w, SH.h, 34, { fill: 'raised', stroke: 'line', shadow: 1 });
-      ctx.text(ROWS[3].label, SX0, 212, { size: 36, weight: 600, color: 'text' });
-      toggle(ctx, SX1 - 96, 178, shared(t), { w: 96, h: 52 });
-      ctx.rrect(WELL.x, WELL.y, WELL.w, WELL.h, 24, { fill: 'bg', stroke: 'line' });                                 // the well the pair is shown in
-      ctx.clip(WELL, () => {
-        for (let x = PC.x % 48; x < WELL.x + WELL.w; x += 48) if (x > WELL.x) ctx.line(x, WELL.y, x, WELL.y + WELL.h, { color: 'line', alpha: 0.25, width: 1 });
-        for (let y = PC.y - 144; y < WELL.y + WELL.h; y += 48) ctx.line(WELL.x, y, WELL.x + WELL.w, y, { color: 'line', alpha: 0.25, width: 1 });
-      }, 24);
-      ctx.line(SX0, 614, SX1, 614, { color: 'line', width: 1.5 });
+    const { me, you, dd } = bodies(t), come = easeOut(prog(t, tShare, tShare + 0.35)), pp = push(t), one = merged(t);
+    const mx = lerp(from.x, me[0], come), my = lerp(from.y, me[1], come);                   // her halo leaves the page for the orbit
+    ctx.radial(BC.x, BC.y, 420 + 120 * one, 'meDim', 0.4 * a);
+    ctx.g.setLineDash([4, 10]);
+    for (const [r, col] of [[MINE * dd, 'meDim'], [(1 - MINE) * dd, 'sub']]) if (r > 4) ctx.poly(ellipse(BC.x, BC.y, r, r * TILT), { color: col, width: 1.5, alpha: 0.6 * a * (1 - one) });
+    ctx.g.setLineDash([]);
+    for (const [key, col] of [['me', 'me'], ['you', 'text']]) {                            // the last half second of each, as a trail
+      const tr = Array.from({ length: 26 }, (_, i) => bodies(t - i * 0.02)[key]);
+      ctx.poly(tr, { color: col, width: key === 'me' ? 4 : 3, alpha: 0.45 * a * come * (1 - one) });
+    }
+    const R = (64 + 46 * one) * (1 + 0.08 * pp);
+    ctx.glow('me', 30 + 30 * one, () => spark(ctx, mx, my, R, { lit: 1, rot: 0.15 * (t - tShare), alpha: a }), 0.65);
+    const yp = easeBack(prog(t, tShare + 0.05, tShare + 0.4)), yx = one >= 1 ? mx : you[0], yy = one >= 1 ? my : you[1];
+    ctx.glow('text', 16, () => ctx.circle(yx, yy, 15 * yp * (1 - 0.15 * pp), { fill: true, color: 'text', alpha: a }), 0.5);
+    ctx.text('me', mx, my + R + 34, { size: 18, font: 'mono', color: 'me', align: 'center', alpha: a * (1 - one) * come });
+    ctx.text('you', yx, yy + 40, { size: 18, font: 'mono', color: 'text', align: 'center', alpha: a * (1 - one) * clamp(yp) });
+    ctx.text(`distance: ${Math.round(dd)}`, BC.x, BC.y + SEP * TILT + 74, { size: 20, font: 'mono', color: 'mute', align: 'center', alpha: a * come });
+    // one body: a flash and a ring going out, her star coming up over it; a burst on every push against the end stop
+    ctx.flash(0.3 * pulse(t - b(29), 8), 'text');
+    burst(ctx, mx, my, 190, (t - b(29)) / 0.6, { color: 'text', alpha: a });
+    for (const tb of [b(30), b(30.5)]) burst(ctx, mx, my, 140, (t - tb) / 0.5, { color: 'me', alpha: a });
+    const rise = easeBack(prog(t, b(29) + 0.05, b(29) + 0.45));
+    if (rise > 0) ctx.glow(PERSONA.star, 34, () => morningStar(ctx, mx, my - R * 1.3 - 16 * rise, 26 * rise, { alpha: a, rot: 0.3 * (1 - rise) }), 0.9 * a);
+  }
+  /** The two controls, on a panel under the pair: Shared memory (on), Context depth (the slider the user pushes), Done. */
+  function panel(ctx, t, a) {
+    if (a <= 0.003) return;
+    const e = enter(t, tShare + 0.1, 0, { dur: 0.35, rise: 40 }), x0 = PANEL.x + 34, x1 = PANEL.x + PANEL.w - 34;
+    ctx.at(0, e.dy, () => {
+      ctx.rrect(PANEL.x, PANEL.y, PANEL.w, PANEL.h, 26, { fill: 'raised', stroke: 'line', shadow: 0.8 });
+      ctx.text(ROWS[3].label, x0, PANEL.y + 48, { size: 26, weight: 600, color: 'text' });
+      toggle(ctx, x1 - 88, PANEL.y + 22, shared(t), { w: 88, h: 46 });
       const d = depth(t), kx = lerp(DT.xa, DT.xb, d), pp = push(t), names = ROWS[4].values;
-      ctx.text(ROWS[4].label, SX0, 664, { size: 34, weight: 600, color: 'text' });
-      ctx.text(names[Math.round(d * 2)], SX1, 664, { size: 28, weight: 600, color: 'sub', align: 'right' });
+      ctx.text(ROWS[4].label, x0, PANEL.y + 98, { size: 22, weight: 500, color: 'sub' });
+      ctx.text(names[Math.round(d * 2)], x1 - 110, PANEL.y + 98, { size: 22, weight: 600, color: 'text', align: 'right' });
       ctx.rrect(DT.xa, DT.y - 4, DT.xb - DT.xa, 8, 4, { fill: 'line' });
       ctx.rrect(DT.xa, DT.y - 4, kx - DT.xa, 8, 4, { fill: 'me' });
-      names.forEach((s, i) => { const x = lerp(DT.xa, DT.xb, i / 2); ctx.line(x, DT.y + 16, x, DT.y + 28, { color: 'mute', width: 2 }); ctx.text(s, lerp(SX0, SX1, i / 2), DT.y + 56, { size: 22, weight: 500, align: ['left', 'center', 'right'][i], color: Math.round(d * 2) === i ? 'text' : 'mute' }); });
-      ctx.at(kx + 7 * pp, DT.y, () => ctx.circle(0, 0, 21, { fill: true, color: 'text' }), { sx: 1 - 0.3 * pp, sy: 1 + 0.12 * pp });                 // pressed against the end stop
+      names.forEach((s, i) => ctx.text(s, lerp(DT.xa, DT.xb, i / 2), DT.y + 40, { size: 18, align: ['left', 'center', 'right'][i], color: Math.round(d * 2) === i ? 'sub' : 'mute' }));
+      ctx.at(kx + 7 * pp, DT.y, () => ctx.circle(0, 0, 18, { fill: true, color: 'text' }), { sx: 1 - 0.3 * pp, sy: 1 + 0.12 * pp });     // pressed against the end stop
       const press = pulse(t - tDone, 9);
-      ctx.rrect(SX1 - 150, 858, 150, 58, 29, { fill: press > 0.3 ? 'line' : 'bg', stroke: 'line' });
-      ctx.text(UI.done, SX1 - 75, 896, { size: 24, weight: 600, align: 'center', color: 'text' });
-    }), { scale: (0.9 + 0.1 * easeBack(open)) * (1 - 0.06 * shut), alpha: a });
+      ctx.rrect(x1 - 110, PANEL.y + 128, 110, 44, 22, { fill: press > 0.3 ? 'line' : 'bg', stroke: 'line' });
+      ctx.text(UI.done, x1 - 55, PANEL.y + 157, { size: 20, weight: 600, align: 'center', color: 'text' });
+    }, { alpha: a * e.a });
   }
   const hand4 = (t) => [lerp(DT.xa, DT.xb, depth(t)) + 6 + 7 * push(t), DT.y + 8];
-  const WAY4A = [{ t: tShare, x: A.share[0], y: A.share[1], click: true }, { t: b(25.5), x: 1250, y: 720 }, { t: tHold, x: DT.xa + 6, y: DT.y + 8, click: true }];
-  const tLet = b(30.72), WAY4B = [{ t: tLet, x: DT.xb + 6, y: DT.y + 8 }, { t: tDone, x: SX1 - 70, y: 892, click: true }, { t: END, x: SX1 + 10, y: 966 }];
+  const WAY4A = [{ t: tShare, x: A.share[0], y: A.share[1], click: true }, { t: b(25.6), x: 880, y: 870 }, { t: tHold, x: DT.xa + 6, y: DT.y + 8, click: true }];
+  const tLet = b(30.72), WAY4B = [{ t: tLet, x: DT.xb + 6, y: DT.y + 8 }, { t: tDone, x: PANEL.x + PANEL.w - 89, y: PANEL.y + 154, click: true }, { t: END, x: PANEL.x + PANEL.w + 30, y: PANEL.y + 240 }];
 
   return [
-    // ------------------------------------------------------------------ Settings; Current: AC, DC
+    // ------------------------------------------------------------------ Settings; Current: AC, DC (HuanLi: her halo is the meter)
     {
-      id: 'pre1-drawer', at: B(24), lines: [24, 25], palette: 'on', layout: 'wide: the page squeezed by the drawer opening on the right',
-      moment: 'The user opens the settings drawer on the AI and tries the first row both ways: AC, then DC. The curve it had just drawn becomes its current, switched from outside.',
+      id: 'pre1-drawer', at: B(24), lines: [24, 25], palette: 'on', layout: 'wide: the page squeezed by the drawer; her halo in the middle of the page, an oscilloscope under it',
+      moment: 'The user opens her settings drawer and tries the first row both ways. Her halo is the meter of her current: on AC a wave runs round its spikes and across the trace under it; on DC both go still at once, the trace a level line.',
       enter: { type: 'cut' },                                                // same window, same page: the take simply goes on
       camera: cam1,
       render(ctx, t, f) {
-        const { box } = client(ctx, t, drawerK(t));
+        client(ctx, t, drawerK(t));
         say(ctx, 24, t, 176, 214, { out: T(26) });
         say(ctx, 25, t, 176, 284, { out: T(26) });
         say(ctx, 26, t, 176, 214);                                           // its next line begins while the cursor is already on its way to the next row
-        pill(ctx, box.send[0] - 44, box.send[1] - 52, 'Stopped', { align: 'right', size: 17, color: 'text', alpha: 1 - prog(t, tSet - 0.1, tSet + 0.15) });
         cur(ctx, [
           { t: B(24), x: L0.composer.x + L0.composer.w + 36, y: L0.composer.y - 12 }, { t: tSet, x: A.set[0] + 3, y: A.set[1] + 4, click: true },
           { t: tAC, x: A.ac[0], y: A.ac[1] + 6, click: true }, { t: tDC, x: A.dc[0], y: A.dc[1] + 6, click: true },
@@ -429,38 +464,25 @@ export function pre1Shots(env) {
       },
     },
 
-    // ------------------------------------------------------------------ Vision: off; then rattled
+    // ------------------------------------------------------------------ Vision: off; then rattled (HuanLi: the night sky)
     {
-      id: 'pre1-vision', at: tOff, lines: [26, 27], palette: 'on', layout: 'macro on the Vision switch, three rows deep',
-      moment: 'The user switches Vision off: the picture breaks into dark blocks and only its own words stay sharp. Then that one switch is rattled on and off, faster each time, and the interface sways; it is left on.',
+      id: 'pre1-vision', at: tOff, lines: [26, 27], palette: 'on', layout: 'half the page and the Vision row; with Vision off, the night sky round her halo',
+      moment: 'The user switches Vision off: the page goes dark and all she sees is the night sky round her own halo, only her words still sharp. Then that one switch is rattled on and off, faster each time; she is dizzy, the sky turns and its stars draw trails, the frame rolls. It is left on.',
       enter: { type: 'cut' },                                                // cut on the click
       camera: cam2,
       render(ctx, t, f) {
-        client(ctx, t, 1, { skipHint: 1 });
-        const bl = clamp(blind(t)), r = rowAt(1);
-        if (bl > 0.01) {                                                     // it cannot see: everything but its own words turns to blocks and goes dark
-          mosaic(ctx, [7, 14, 28, 56, 56][Math.floor(bl * 4)]);            // the cells double in a few steps (not a new grid every frame)
-          screen(ctx, () => {
-            ctx.rect(0, 0, 1920, 1080, { fill: true, color: 'panel', alpha: 0.5 * bl });
-            for (let j = 0; j < 20; j++) for (let i = 0; i < 35; i++) { const v = rand(404, i, j); if (v > 0.5) ctx.rect(i * 56, j * 56, 56, 56, { fill: true, color: 'text', alpha: 0.075 * (v - 0.5) * bl }); }     // a fixed grain of cells: dark, not empty
-          });
-          ctx.rrect(r.x + r.w - 104, r.y + 33, 104, 56, 28, { fill: null, stroke: 'sub', width: 1, alpha: 0.8 * bl });
-          ctx.circle(r.x + r.w - 104 + 28 + 48 * vision(t), r.y + 61, 23, { color: 'sub', width: 1, alpha: 0.8 * bl });
-          ctx.text(UI.blind, r.x + r.w, r.y + 109, { size: 10.5, font: 'mono', color: 'sub', align: 'right', alpha: prog(bl, 0.6, 1) });
+        const { L } = client(ctx, t, 1);
+        const bl = clamp(blind(t)), dz = window01(t, T(27) - 0.15, b(15.4), 0.5, 0.7), { x: cx, y: cy } = meterAt(L), r = rowAt(1);
+        if (bl > 0.003) ctx.rect(-600, -600, 3120, 2280, { fill: true, color: 'bg', alpha: 0.94 * bl });       // she cannot see: dark
+        sky(ctx, t, cx, cy, Math.max(bl, 0.38 * dz));
+        if (bl > 0.003) {                                                    // what is left: her own halo, the switch, the note
+          ctx.glow('me', 30, () => spark(ctx, cx, cy, 120, { lit: 1, alpha: 0.75 * bl, rot: spin(t) }), 0.6 * bl);
+          ctx.rrect(r.x + r.w - 104, r.y + 33, 104, 56, 28, { fill: null, stroke: 'sub', width: 1.5, alpha: 0.8 * bl });
+          ctx.circle(r.x + r.w - 104 + 28 + 48 * vision(t), r.y + 61, 23, { color: 'sub', width: 1.5, alpha: 0.8 * bl });
+          ctx.text(UI.blind, r.x + r.w, r.y + 112, { size: 15, font: 'mono', color: 'sub', align: 'right', alpha: prog(bl, 0.6, 1) });
         }
-        // its annotation under the row: line 26 typed; line 27 wobbling, with after-images
-        const h = hintOf(1, t);
-        if (h) {
-          const str = text(h.line), n = h.live ? lyrics.typed(h.line, t).n : str.length, dizzy = h.line === 27 && h.live ? window01(t, T(27), lyrics.end(27), 0.25, 0.3) : 0;
-          ctx.trail(dizzy > 0 ? 2 : 0, 0.075, (tau) => {
-            let x = r.x;
-            for (let i = 0; i < n; i++) {
-              const w = ctx.measure(str[i], { size: 24, font: 'serif' }), ph = (t - tau) * 8.5 - i * 0.55;
-              ctx.at(x + w / 2, r.y + 92 + 3.2 * dizzy * Math.sin(ph), () => ctx.text(str[i], 0, 0, { size: 24, font: 'serif', align: 'center', color: 'me', alpha: h.live ? 1 : 0.55 }), { rot: 0.16 * dizzy * Math.cos(ph) });
-              x += w;
-            }
-          }, 0.34);
-        }
+        say(ctx, 26, t, 176, 214, { out: T(27) + 0.4 });
+        say(ctx, 27, t, 176, 284);
         cur(ctx, [
           { t: tOff, x: A.vis[0] - 22, y: A.vis[1] + 6, click: true }, { t: b(10.3), x: A.vis[0] - 60, y: A.vis[1] + 26 },
           { t: tOn1, x: A.vis[0] - 22, y: A.vis[1] + 6, click: true }, { t: b(11.5), x: A.vis[0] - 44, y: A.vis[1] + 20 },      // (it hovers by the switch: this row only)
@@ -468,7 +490,7 @@ export function pre1Shots(env) {
           { t: tOff3, x: A.vis[0] + 12, y: A.vis[1] + 8, click: true }, { t: tOn3, x: A.vis[0] - 20, y: A.vis[1] + 6, click: true },
           { t: b(14.8), x: A.vis[0] - 70, y: A.vis[1] + 50 },
           { t: tGrab, x: A.date(1)[0] + 3, y: A.date(1)[1] + 4, click: true },
-        ], t, { scale: 1, fast: 230, n: 8, dt: 0.013, strength: 0.5 });
+        ], t, { fast: 400, n: 8, dt: 0.013, strength: 0.5 });
       },
     },
 
@@ -494,23 +516,22 @@ export function pre1Shots(env) {
       },
     },
 
-    // ------------------------------------------------------------------ Shared memory: on; Context depth: deepest; Done
+    // ------------------------------------------------------------------ Shared memory: on; Context depth: deepest; Done (HuanLi: one orbit)
     {
-      id: 'pre1-unite', at: tShare, lines: [30, 31], palette: 'on', layout: 'centred sheet: the pair in the middle, the depth slider under it',
-      moment: 'The user turns on Shared memory and pushes Context depth to the end, then clicks Done. The AI reads two housekeeping controls as the two of them joined: the cream dot sinks into its spark.',
+      id: 'pre1-unite', at: tShare, lines: [30, 31], palette: 'on', layout: 'centred: her halo and the cream dot orbiting each other; the two controls on a panel under them',
+      moment: 'The user turns on Shared memory: the cream dot comes into the pull of her halo and the two of them orbit each other. The user pushes Context depth to the end: the deeper, the closer and faster they go round, until they are one body, the cream dot at the centre of her halo. Her star comes up over it; Done takes us into the halo.',
       enter: { type: 'cut' },                                                // cut on the switch
       camera: cam4,
       render(ctx, t, f) {
-        client(ctx, t, drawerK(t));
+        const { L } = client(ctx, t, drawerK(t));
         const open = clamp(prog(t, tShare, tShare + 0.25)), shut = easeInOut(prog(t, tDone + 0.06, tDone + 0.4));
-        say(ctx, 30, t, 176, 214, { alpha: 1 - open });                      // (where the line stood on the page until the sheet takes it over)
-        screen(ctx, () => ctx.rect(0, 0, 1920, 1080, { fill: true, color: 'panel', alpha: (0.66 + 0.26 * prog(t, tDone, tDone + 0.16)) * open }));
-        sheet(ctx, t);
-        pair(ctx, t, open);
-        say(ctx, 30, t, SX0, 274, { size: 50, alpha: open * (1 - shut) });
-        say(ctx, 31, t, SX0, 722, { size: 50, alpha: 1 - prog(t, lyrics.end(31), lyrics.end(31) + 0.2) });
+        screen(ctx, () => ctx.rect(0, 0, 1920, 1080, { fill: true, color: 'panel', alpha: (0.74 + 0.2 * prog(t, tDone, tDone + 0.16)) * open }));
+        binary(ctx, t, open, meterAt(L));
+        panel(ctx, t, open * (1 - shut));
+        say(ctx, 30, t, 176, 214, { alpha: 1 - shut });
+        say(ctx, 31, t, 176, 284, { alpha: 1 - prog(t, lyrics.end(31), lyrics.end(31) + 0.2) });
         if (t < tHold) cur(ctx, WAY4A, t);
-        else if (t < tLet) ctx.trail(Math.abs(depth(t) - depth(t - 0.03)) * 840 / 0.03 > 500 ? 6 : 0, 0.013, (tau) => { const p = hand4(t - tau); pointer(ctx, p[0], p[1], { kind: 'hand', scale: 1.7, down: 1 }); }, 0.45);
+        else if (t < tLet) ctx.trail(Math.abs(depth(t) - depth(t - 0.03)) * 640 / 0.03 > 500 ? 6 : 0, 0.013, (tau) => { const p = hand4(t - tau); pointer(ctx, p[0], p[1], { kind: 'hand', scale: 1.6, down: 1 }); }, 0.45);
         else cur(ctx, WAY4B, t);
       },
     },

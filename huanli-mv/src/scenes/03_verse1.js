@@ -10,58 +10,82 @@
 //
 // HuanLi version: the answer comes out of her halo, so its twelve points are the spike tips of the halo, and every
 // point is a small four-pointed star: the point set of line 13 is a constellation, and the cream edges the user is
-// given are the lines drawn between its stars. On the circle, the twelve ticks of her halo's clock stand inside the ring
-// and light up in cream as the user's hand sweeps past them.
+// given are the lines drawn between its stars. The three shots after it are new, one line of thought carried on:
+//   v1-circle   polar chart       the cube's outline relaxes into her ring (a crown of spikes outside, her clock inside);
+//                                 the user takes a cream planet on it and walks it once all the way round her, painting the
+//                                 ring cream; on the keyword the ring is laid out straight: a line exactly 2*PI*r long
+//   v1-sine     graph paper       the laid line takes her wave: a small ring rolls along it and draws the sine; the
+//                                 user sits on one crest, then every point of the wave gets a tangent with a cream dot on it
+//   v1-limit    graph paper       the wave crowds towards one vertical, faster and smaller (it approaches infinity); the
+//                                 user drags a cream line onto that vertical: her wave can only ever reach it
 import { chatLayout, composer, header, pill, room, windowFrame } from '../components/chat.js';
-import { drawCursor, pointer } from '../components/cursor.js';
+import { cursorAt, drawCursor, pointer } from '../components/cursor.js';
 import { morningStar, spark, sparkTips } from '../components/motif.js';
 import { haloAt } from '../components/persona.js';
 import { MESH, drawSegs, project, rot } from '../engine/geom.js';
 import { rand } from '../engine/prng.js';
 import { hullOutline, morph, place } from '../engine/shapes.js';
-import { big, onPath } from '../engine/type.js';
-import { clamp, easeInOut, easeOut, lerp, prog, pulse } from '../engine/util.js';
+import { big } from '../engine/type.js';
+import { clamp, easeBack, easeInOut, easeOut, lerp, prog, pulse } from '../engine/util.js';
 import { HANDOFF } from './02_title.js';
 import { aiLine, cues } from './kit.js';
 import { LINE } from './shared.js';
 
 const TAU = Math.PI * 2;
 const fmt = (v) => (v < 0 ? '' : ' ') + v.toFixed(2);
+/** HuanLi: an infinity sign as a drawn lemniscate (the bundled mono face has no glyph for it), w wide, centred on (x, y). */
+function infinity(ctx, x, y, w, { color = 'mute', alpha = 1, width = 2 } = {}) {
+  const pts = [];
+  for (let i = 0; i <= 64; i++) { const a = (i / 64) * TAU, d = 1 + Math.sin(a) ** 2; pts.push([x + (w / 2) * Math.cos(a) / d, y + (w / 2) * Math.sin(a) * Math.cos(a) / d]); }
+  ctx.poly(pts, { close: true, color, alpha, width });
+}
 
 export function verse1Shots(env) {
-  const { script, lyrics } = env, { T, H, B, Bt, P, text } = cues(env);
+  const { script } = env, { T, H, B, Bt, P, text } = cues(env);
   const L = chatLayout({ side: 0 });                       // the sidebar is folded away: the answer has the page
   const START = Bt(63), hitDim = T(LINE.DIMENSION), cutCircle = H(LINE.CIRCLE), tHand = T(LINE.GIVE_2);
   const hitCirc = T(LINE.CIRCUMFERENCE), cutSine = H(LINE.SINE), tSit = T(LINE.SIT), hitTan = T(LINE.TANGENTS);
   const cutLimit = H(LINE.INFINITY), hitLim = T(LINE.LIMITATIONS), END = B(24);
-  const SWEEP = 0.68;
-  const C = { x: HANDOFF.cx, y: HANDOFF.cy }, R_CUBE = 235, R_CIRCLE = 276;
+  const C = { x: HANDOFF.cx, y: HANDOFF.cy }, R_CUBE = 235;
   const CUBE = MESH.cube;
   const AXIS = CUBE.edges.map(([i, j]) => [0, 1, 2].find((c) => Math.abs(CUBE.verts[i][c] - CUBE.verts[j][c]) > 0.1));
   const cam = { cx: C.x, cy: C.y, scale: R_CUBE };
   const spin = (t) => { const k = easeOut(prog(t, START, START + 1.2)); return [0.36 * k, 0.5 * (t - START) * k, 0]; };
   const TIPS = sparkTips(HANDOFF.cx, HANDOFF.cy, HANDOFF.r, HANDOFF.rot, 12, haloAt(START)).map(([x, y]) => [(x - C.x) / R_CUBE, (y - C.y) / R_CUBE, 0]);
   const cubeHull = hullOutline(CUBE.verts.map((v) => project(rot(v, ...spin(cutCircle)), cam)));
-  const circle = place('circle', { cx: C.x, cy: C.y, r: R_CIRCLE });
+  const circle = place('circle', { cx: C.x, cy: C.y, r: 240 });
   const G = { x: L.win.x + 2, y: L.head.y + L.head.h + 2, w: L.win.w - 4, h: L.composer.y - L.head.y - L.head.h - 18 };   // the page area the figures live on
 
-  const handAngle = (t) => -Math.PI / 2 + (TAU / (4 * P)) * (Math.min(t, hitCirc) - tHand) + TAU * easeInOut(prog(t, hitCirc, hitCirc + SWEEP));
-  const sineGeo = (t) => {
-    const k = easeInOut(prog(t, cutSine, cutSine + 0.75));
-    const Rc = lerp(R_CIRCLE, 128, k), ccx = lerp(C.x, 330, k), th = handAngle(cutSine) + (TAU / (2 * P)) * (t - cutSine);
-    const X0 = ccx + Rc + 74, kx = TAU / 520;
-    return { k, Rc, ccx, ccy: C.y, th, X0, X1: 1760, kx, yAt: (x) => C.y + Rc * Math.sin(th - kx * (x - X0)), slope: (x) => -Rc * kx * Math.cos(th - kx * (x - X0)) };
-  };
+  // HuanLi: the ring, laid out flat, the wave and the limit
+  const RR = 240, LINE_Y = C.y + RR, X0W = C.x - Math.PI * RR, X1W = C.x + Math.PI * RR;          // the laid ring runs X0W..X1W
+  const tGrab = tHand + 0.3, orbitA = (t) => -Math.PI / 2 + TAU * easeInOut(prog(t, tGrab, hitCirc - 0.06));   // the planet: once round her
+  const flat = (t) => easeInOut(prog(t, hitCirc, hitCirc + 0.45));
+  /** Point at arc length s from the bottom of the ring (s in [-PI*R, PI*R]): on the ring (k = 0) or on the laid line (k = 1). */
+  const ringPt = (s, k) => [lerp(C.x + RR * Math.sin(s / RR), C.x + s, k), lerp(C.y + RR * Math.cos(s / RR), LINE_Y, k)];
+  const sOf = (a) => RR * (Math.PI / 2 - a);                                            // arc length of the ring point at angle a (screen angles)
+  const AX_Y = 530, AMP = 150, KX = TAU / 420;                                          // the wave on the page
+  const raise = (t) => easeInOut(prog(t, cutSine, cutSine + 0.8)), front = (t) => lerp(X0W, X1W, easeInOut(prog(t, cutSine + 0.05, tSit - 0.15)));
+  const waveY = (x, t) => lerp(LINE_Y, AX_Y, raise(t)) - AMP * raise(t) * Math.sin(KX * (x - X0W));
+  const waveSlope = (x, t) => -AMP * raise(t) * KX * Math.cos(KX * (x - X0W));
+  const LX = 1500, approach = (t) => easeInOut(prog(t, cutLimit, cutLimit + 1.5)), locked = (t) => easeOut(prog(t, hitLim, hitLim + 0.25));
 
   /** Backdrop + interface shared by the four shots: the page with graph paper, header, composer (the AI is answering). */
-  function stage(ctx, t, { busy = true, titleAt = START + P } = {}) {
+  function stage(ctx, t, { busy = true, titleAt = START + P, polar = 0 } = {}) {
     room(ctx, { dim: 0.42, t });
     windowFrame(ctx, L, { glass: 0.94 });
     const title = script.title ?? '', n = Math.floor(clamp((t - titleAt) * 22, 0, title.length));
     header(ctx, L, { t, title: n > 0 ? title.slice(0, n) : 'New conversation', presence: 'online' });
     ctx.clip(G, () => {                                    // graph paper: fine squares, a heavier line every fifth
-      for (let x = C.x % 48; x < 1920; x += 48) ctx.line(x, G.y, x, G.y + G.h, { color: 'line', alpha: Math.round((x - C.x) / 48) % 5 === 0 ? 0.5 : 0.22, width: 1 });
-      for (let y = C.y % 48; y < 1080; y += 48) ctx.line(G.x, y, G.x + G.w, y, { color: 'line', alpha: Math.round((y - C.y) / 48) % 5 === 0 ? 0.5 : 0.22, width: 1 });
+      const sq = 1 - polar;
+      if (sq > 0) {
+        for (let x = C.x % 48; x < 1920; x += 48) ctx.line(x, G.y, x, G.y + G.h, { color: 'line', alpha: sq * (Math.round((x - C.x) / 48) % 5 === 0 ? 0.5 : 0.22), width: 1 });
+        for (let y = C.y % 48; y < 1080; y += 48) ctx.line(G.x, y, G.x + G.w, y, { color: 'line', alpha: sq * (Math.round((y - C.y) / 48) % 5 === 0 ? 0.5 : 0.22), width: 1 });
+      }
+      if (polar > 0) {                                     // HuanLi: a polar star chart round the centre (her clock: twelve spokes)
+        for (let r = 48; r < 1100; r += 48) ctx.circle(C.x, C.y, r, { color: 'line', width: 1, alpha: polar * ((r / 48) % 5 === 0 ? 0.5 : 0.22) });
+        for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; ctx.line(C.x + Math.cos(a) * 48, C.y + Math.sin(a) * 48, C.x + Math.cos(a) * 1100, C.y + Math.sin(a) * 1100, { color: 'line', width: 1, alpha: polar * (i % 3 ? 0.22 : 0.45) }); }
+        for (let i = 0; i < 70; i++) { const x = G.x + rand(71, i, 0) * G.w, y = G.y + rand(71, i, 1) * G.h; ctx.circle(x, y, 1.2 + 1.6 * rand(71, i, 2), { fill: true, color: 'sub', alpha: polar * (0.25 + 0.4 * rand(71, i, 3)) }); }
+      }
       ctx.radial(C.x, C.y, 620, 'meDim', 0.16);
     });
     return composer(ctx, L.composer, { placeholder: script.composer_placeholder ?? '', t, send: busy ? 'busy' : 'idle' });
@@ -130,132 +154,163 @@ export function verse1Shots(env) {
       },
     },
 
-    // ------------------------------------------------------------------ circle -> CIRCUMFERENCE
+    // ------------------------------------------------------------------ circle -> CIRCUMFERENCE (HuanLi: her ring, walked once round, laid flat)
     {
-      id: 'v1-circle', at: cutCircle, lines: [15, 17], palette: 'on', hud: 0, layout: 'centred ring, lyric set on the ring',
-      moment: 'If it is a circle, it gives its circumference: the user runs the cursor round the edge and the orange ring turns cream behind it.',
-      enter: { type: 'cut', flash: 0.12, flashColor: 'me' },                 // match cut: the lattice's silhouette is this outline
+      id: 'v1-circle', at: cutCircle, lines: [15, 17], palette: 'on', hud: 0, layout: 'polar chart: her ring with a crown of spikes outside and her clock inside; then the ring laid out flat',
+      moment: 'If it is a circle, it gives its circumference: the user takes a cream planet on her ring and walks it once all the way round her, painting the ring cream; on the word the whole ring is laid out straight under them, a line exactly 2πr long.',
+      enter: { type: 'cut', flash: 0.12, flashColor: 'me' },                 // match cut: the lattice's silhouette relaxes into this ring
       render(ctx, t, f) {
-        stage(ctx, t);
-        const relax = easeInOut(prog(t, cutCircle, cutCircle + 1.6 * P)), measured = prog(t, hitCirc, hitCirc + SWEEP);
-        spark(ctx, C.x, C.y, R_CIRCLE * 0.86, { color: 'meDim', alpha: 0.28 * relax, core: 0, rot: 0.05 * (t - cutCircle) });   // the motif, inside the circle
-        ctx.glow('me', 18, () => ctx.poly(morph(cubeHull, circle, relax), { close: true, color: 'me', width: 5 }), 0.4);
-        ctx.line(C.x - 10, C.y, C.x + 10, C.y, { color: 'sub' }); ctx.line(C.x, C.y - 10, C.x, C.y + 10, { color: 'sub' });
-        // the clock of her halo inside the ring: twelve ticks, each lit cream once the user's sweep has passed it
-        const a0t = handAngle(hitCirc), swept0 = TAU * easeInOut(measured);
-        for (let i = 0; i < 12; i++) {
-          const an = -Math.PI / 2 + (i / 12) * TAU, lit = measured > 0 && ((an - a0t) % TAU + TAU) % TAU < swept0, len = i % 3 ? 16 : 30;
-          ctx.line(C.x + Math.cos(an) * (R_CIRCLE - 14), C.y + Math.sin(an) * (R_CIRCLE - 14), C.x + Math.cos(an) * (R_CIRCLE - 14 - len), C.y + Math.sin(an) * (R_CIRCLE - 14 - len),
-            { color: lit ? 'text' : 'meDim', width: lit ? 4 : 2.5, alpha: relax * (lit ? 1 : 0.7) });
+        stage(ctx, t, { polar: easeInOut(prog(t, cutCircle, cutCircle + 0.5)) });
+        const relax = easeInOut(prog(t, cutCircle, cutCircle + 1.6 * P)), k = flat(t), crown = relax * (1 - k);
+        const held = t >= tGrab, painted = held ? sOf(orbitA(t)) : Math.PI * RR;            // cream from the top (s = PI*R) down to the planet
+        ctx.line(C.x - 10, C.y, C.x + 10, C.y, { color: 'sub', alpha: 1 - k }); ctx.line(C.x, C.y - 10, C.x, C.y + 10, { color: 'sub', alpha: 1 - k });
+        ctx.text('me', C.x + 14, C.y + 30, { size: 18, font: 'mono', color: 'me', alpha: crown });
+        // her crown and her clock: a spike outside and a tick inside at every hour, cream once the planet has passed it
+        for (let i = 0; i < 12 && crown > 0; i++) {
+          const an = -Math.PI / 2 + (i / 12) * TAU, c = Math.cos(an), sn = Math.sin(an), passed = held && sOf(an) >= painted;
+          const r0 = RR + 10, r1 = RR + (i % 2 ? 26 : 42), w = 9;
+          ctx.poly([[C.x + c * r0 - sn * w, C.y + sn * r0 + c * w], [C.x + c * r1, C.y + sn * r1], [C.x + c * r0 + sn * w, C.y + sn * r0 - c * w]], { close: true, fill: true, color: passed ? 'text' : 'me', alpha: crown });
+          const d = i % 3 ? 14 : 28;
+          ctx.line(C.x + c * (RR - 14), C.y + sn * (RR - 14), C.x + c * (RR - 14 - d), C.y + sn * (RR - 14 - d), { color: passed ? 'text' : 'meDim', width: passed ? 4 : 2.5, alpha: crown });
         }
-        const rr = R_CIRCLE + 36, fade = 1 - prog(t, hitCirc - 0.1, hitCirc + 0.12);
-        onPath(ctx, text(LINE.CIRCLE), (d) => { const a = -2.42 + d / rr; return [C.x + Math.cos(a) * rr, C.y + Math.sin(a) * rr, a + Math.PI / 2]; },
-          { size: 54, weight: 600, spacingEm: 0.14, reveal: lyrics.typed(LINE.CIRCLE, t).n, alpha: fade });
-        if (t >= tHand) {
-          const r2 = R_CIRCLE + 66;
-          onPath(ctx, text(LINE.GIVE_2), (d) => { const a = 2.5 - d / r2; return [C.x + Math.cos(a) * r2, C.y + Math.sin(a) * r2, a - Math.PI / 2]; },
-            { size: 40, weight: 400, spacingEm: 0.1, reveal: lyrics.typed(LINE.GIVE_2, t).n, alpha: fade });
-          const th = handAngle(t), len = R_CIRCLE * easeOut(prog(t, tHand, tHand + 0.3));
-          ctx.line(C.x, C.y, C.x + Math.cos(th) * len, C.y + Math.sin(th) * len, { color: 'me', width: 3 });
-          ctx.text('r', C.x + Math.cos(th) * len * 0.5 + 14, C.y + Math.sin(th) * len * 0.5 - 12, { size: 30, font: 'serif', italic: true, color: 'me' });
+        // the ring: first the cube's outline relaxing into it; her part orange, the walked part cream; then laid flat
+        if (relax < 1) ctx.glow('me', 18, () => ctx.poly(morph(cubeHull, circle, relax), { close: true, color: 'me', width: 5 }), 0.4);
+        else {
+          const N = 260, mine = [], yours = [];
+          for (let i = 0; i <= N; i++) { const sv = -Math.PI * RR + (i / N) * TAU * RR; (sv >= painted ? yours : mine).push(ringPt(sv, k)); }
+          if (mine.length > 1) ctx.glow('me', 18, () => ctx.poly(mine, { color: 'me', width: 5 }), 0.4);
+          if (yours.length > 1) ctx.glow('text', 16, () => ctx.poly(yours, { color: 'text', width: 7 }), 0.45);
         }
-        const a0 = handAngle(hitCirc), th = handAngle(t);
-        const rim = [C.x + Math.cos(th) * R_CIRCLE, C.y + Math.sin(th) * R_CIRCLE];
-        if (measured > 0) {                                                  // the gift: the edge, measured by the user's own hand
-          const swept = TAU * easeInOut(measured), word = text(LINE.CIRCUMFERENCE), step = TAU / word.length;
-          ctx.circle(C.x, C.y, R_CIRCLE, { a0, a1: a0 + swept, width: 8, color: 'text' });
-          for (let i = 0; i < word.length; i++) {
-            const off = (i + 0.5) * step;
-            if (off > swept) break;
-            const a = a0 + off, k = pulse(swept - off, 2.2);
-            ctx.at(C.x + Math.cos(a) * (R_CIRCLE + 62), C.y + Math.sin(a) * (R_CIRCLE + 62), () => ctx.text(word[i], 0, 0, { size: 84, weight: 900, font: 'serif', align: 'center', color: 'text' }), { rot: a + Math.PI / 2, scale: 1 + 0.45 * k });
+        // the radius to the planet, while it is a ring
+        if (held && k < 1) {
+          const [px, py] = ringPt(painted, 0);
+          ctx.line(C.x, C.y, px, py, { color: 'me', width: 3, alpha: 1 - k });
+          ctx.text('r', (C.x + px) / 2 + 14, (C.y + py) / 2 - 12, { size: 30, font: 'serif', italic: true, color: 'me', alpha: 1 - k });
+        }
+        // the planet: the user, on her ring
+        const pop = easeBack(prog(t, tHand, tHand + 0.3));
+        if (pop > 0) {
+          const [px, py] = ringPt(painted, k), out = k > 0 ? [0, 34] : [(px - C.x) / RR * 30, (py - C.y) / RR * 30];
+          ctx.glow('text', 18, () => ctx.circle(px, py, 13 * pop, { fill: true, color: 'text' }), 0.6);
+          ctx.text('you', px + out[0], py + out[1] + 6, { size: 18, font: 'mono', color: 'text', align: 'center', alpha: clamp(pop) });
+        }
+        // laid flat: its two ends, its length, and the word written along it
+        if (k > 0) {
+          for (const x of [X0W, X1W]) ctx.line(x, LINE_Y - 16, x, LINE_Y + 16, { color: 'text', width: 3, alpha: k });
+          ctx.text(`2 * PI * ${RR} = ${(TAU * RR).toFixed(2)}`, X1W, LINE_Y + 50, { size: 24, font: 'mono', color: 'text', align: 'right', alpha: prog(k, 0.5, 1) });
+          const word = text(LINE.CIRCUMFERENCE), n = word.length;
+          for (let j = 0; j < n; j++) {
+            const sv = -Math.PI * RR * 0.86 + ((j + 0.5) / n) * TAU * RR * 0.86, [x, y] = ringPt(sv, k), [x2, y2] = ringPt(sv + 2, k);
+            const ang = Math.atan2(y2 - y, x2 - x), kj = easeOut(prog(k, 0.35 + 0.3 * Math.abs(sv) / (Math.PI * RR), 0.75 + 0.25 * Math.abs(sv) / (Math.PI * RR)));
+            if (kj > 0) ctx.at(x + Math.sin(ang) * 46, y - Math.cos(ang) * 46, () => ctx.text(word[j], 0, 0, { size: 78, weight: 900, font: 'serif', align: 'center', color: 'text', alpha: kj }), { rot: ang, scale: 1.6 - 0.6 * kj });
           }
-          ctx.text(`C = 2 * PI * r = ${(TAU * easeInOut(measured)).toFixed(4)}`, C.x, C.y + 70, { size: 26, font: 'mono', align: 'center', color: 'text' });
-        }
-        ctx.flash(0.25 * pulse(t - hitCirc, 9), 'text');
-        // the cursor comes to the rim, then rides the sweep
-        if (t < hitCirc) drawCursor(ctx, [{ t: cutCircle, x: C.x + 300, y: C.y - 150 }, { t: tHand, x: C.x + 420, y: C.y + 60 }, { t: hitCirc - 0.02, x: C.x + Math.cos(a0) * R_CIRCLE, y: C.y + Math.sin(a0) * R_CIRCLE, click: true }], t);
-        else ctx.trail(measured < 1 ? 7 : 0, 0.0035, (tau) => { const a = handAngle(t - tau); pointer(ctx, C.x + Math.cos(a) * R_CIRCLE, C.y + Math.sin(a) * R_CIRCLE, { scale: 1.5, down: 1 }); }, 0.3);
-        void rim;
+        } else if (held) ctx.text('C = 2 * PI * r', C.x, C.y + 74, { size: 24, font: 'mono', color: 'text', align: 'center', alpha: prog(t, tGrab, tGrab + 0.3) });
+        ctx.flash(0.22 * pulse(t - hitCirc, 9), 'text');
+        say(ctx, t, 15, 16);
+        // the hand: to the planet, then round with it; let go on the word
+        if (!held) drawCursor(ctx, [{ t: cutCircle, x: C.x + 300, y: C.y - 150 }, { t: tGrab, x: C.x + 3, y: C.y - RR + 4, click: true }], t);
+        else if (t < hitCirc) { const [px, py] = ringPt(painted, 0); ctx.trail(5, 0.012, (tau) => { const [qx, qy] = ringPt(sOf(orbitA(t - tau)), 0); pointer(ctx, qx - 2, qy + 4, { kind: 'hand', scale: 1.5, down: 1 }); }, 0.4); void px; void py; }
+        else drawCursor(ctx, [{ t: hitCirc, x: C.x - 2, y: C.y - RR + 4 }, { t: cutSine, x: C.x + 160, y: C.y - 300 }], t, { kind: 'hand' });
       },
     },
 
-    // ------------------------------------------------------------------ sine -> TANGENTS
+    // ------------------------------------------------------------------ sine -> TANGENTS (HuanLi: the laid line takes her wave)
     {
-      id: 'v1-sine', at: cutSine, lines: [18, 20], palette: 'on', hud: 0, layout: 'wide band: circle left, wave across, lyric riding it',
-      moment: 'If it is a sine wave, the user may sit on its tangents: the cursor rests on the wave and a cream tangent tilts under it.',
-      enter: { type: 'cut' },                                                // match cut: same circle, same place
+      id: 'v1-sine', at: cutSine, lines: [18, 20], palette: 'on', hud: 0, layout: 'graph paper: a small ring rolling along the laid line draws her wave; a tangent at every point, a cream dot on each',
+      moment: 'If it is a sine wave, the user may sit on its tangents: the laid line takes her wave, drawn by a small ring rolling along it; the user sits down on one crest, then every point of the wave gets its tangent, with a cream dot sitting on each.',
+      enter: { type: 'cut' },                                                // match cut: the same line, in the same place
       render(ctx, t, f) {
-        stage(ctx, t);
-        const g = sineGeo(t), { Rc, ccx, ccy, th, X0, X1, yAt, slope } = g;
-        ctx.glow('me', 14, () => ctx.circle(ccx, ccy, Rc, { color: 'me', width: 5 }), 0.35);
-        const hx = ccx + Math.cos(th) * Rc, hy = ccy + Math.sin(th) * Rc;
-        ctx.line(ccx, ccy, hx, hy, { color: 'me', width: 3 }); ctx.circle(hx, hy, 7, { fill: true, color: 'me' });
-        ctx.line(ccx - Rc - 20, ccy, X1, ccy, { color: 'sub', alpha: 0.6 * g.k, width: 1.5 });
-        ctx.g.setLineDash([6, 8]); ctx.line(hx, hy, X0, hy, { color: 'sub', alpha: g.k, width: 1.5 }); ctx.g.setLineDash([]);
-        const xEnd = lerp(X0, X1, easeOut(prog(t, cutSine + 0.3, cutSine + 1.0)));
-        for (let x = X0; x <= xEnd; x += 13) ctx.line(x, ccy, x, yAt(x), { color: 'meDim', alpha: 0.55 * (0.6 + 0.4 * f.rmsEnv), width: 2 });   // hatching between axis and curve
+        stage(ctx, t, { polar: 1 - easeInOut(prog(t, cutSine, cutSine + 0.5)) });
+        const r0 = raise(t), xf = front(t), ay = lerp(LINE_Y, AX_Y, r0), gone = prog(t, cutSine, cutSine + 0.5);
+        if (gone < 1) ctx.line(X0W, LINE_Y, X1W, LINE_Y, { color: 'text', width: 7, alpha: 1 - gone });       // the gift of the last shot gives way
+        ctx.line(X0W - 20, ay, X1W + 30, ay, { color: 'sub', width: 1.5, alpha: 0.6 * r0 });
+        for (let x = X0W; x <= xf; x += 13) ctx.line(x, ay, x, waveY(x, t), { color: 'meDim', alpha: 0.45 * (0.6 + 0.4 * f.rmsEnv), width: 2 });
         const curve = [];
-        for (let x = X0; x <= xEnd; x += 6) curve.push([x, yAt(x)]);
-        ctx.glow('me', 14, () => ctx.poly(curve, { color: 'me', width: 5 }), 0.4);
-        say(ctx, t, 18, null);
+        for (let x = X0W; x <= xf; x += 5) curve.push([x, waveY(x, t)]);
+        if (curve.length > 1) ctx.glow('me', 14, () => ctx.poly(curve, { color: 'me', width: 5 }), 0.4);
+        // the pen: a small ring rolling along the axis; the tip of its hand is the height of the wave
+        const pen = (1 - prog(t, tSit - 0.25, tSit + 0.15)) * r0, R = AMP * r0, th = KX * (xf - X0W);
+        if (pen > 0.01) {
+          const tip = [xf + R * Math.cos(th), ay - R * Math.sin(th)];
+          ctx.circle(xf, ay, R, { color: 'me', width: 4, alpha: pen });
+          ctx.line(xf, ay, tip[0], tip[1], { color: 'me', width: 3, alpha: pen });
+          ctx.g.setLineDash([6, 8]); ctx.line(tip[0], tip[1], xf, waveY(xf, t), { color: 'sub', width: 1.5, alpha: pen }); ctx.g.setLineDash([]);
+          ctx.glow('me', 14, () => ctx.circle(xf, waveY(xf, t), 9, { fill: true, color: 'meHot', alpha: pen }), 0.6);
+        }
+        // the user sits down on one crest: a tangent, level, under them
+        const XS = X0W + (Math.PI / 2 + 2 * TAU) / KX, sit = easeOut(prog(t, tSit, tSit + 0.35));
         if (t >= tSit) {
-          onPath(ctx, text(LINE.SIT), (d) => { const x = X0 + 70 + d; return [x, yAt(x) - 30, Math.atan(slope(x))]; },
-            { size: 42, weight: 600, spacingEm: 0.22, reveal: lyrics.typed(LINE.SIT, t).n });
-          // the user sits on the wave: the cursor rides it, and what it sits on is a tangent
-          const xr = lerp(X0, X1, 0.74), yr = yAt(xr), m = slope(xr), l = Math.hypot(1, m), half = 170 * easeOut(prog(t, tSit, tSit + 0.3));
-          ctx.line(xr - half / l, yr - (half * m) / l, xr + half / l, yr + (half * m) / l, { color: 'text', width: 4 });
-          ctx.circle(xr, yr, 7, { fill: true, color: 'text' });
-          pointer(ctx, xr - 4, yr - 2 - 220 * (1 - easeOut(prog(t, tSit, tSit + 0.35))), { kind: 'hand', scale: 1.5, alpha: prog(t, tSit, tSit + 0.12) });
+          const ys = waveY(XS, t);
+          ctx.line(XS - 96 * sit, ys, XS + 96 * sit, ys, { color: 'text', width: 4 });
+          pointer(ctx, XS - 4, ys - 30 - 220 * (1 - sit), { kind: 'hand', scale: 1.5, alpha: prog(t, tSit, tSit + 0.12), down: sit > 0.95 ? 1 : 0 });
         }
+        // then every point of the wave has a tangent, and on every tangent sits a cream dot
         if (t >= hitTan) {
-          [0.16, 0.36, 0.56].forEach((u, i) => {
-            const x = lerp(X0, X1, u), y = yAt(x), m = slope(x), l = Math.hypot(1, m), half = 150 * easeOut(prog(t, hitTan + i * 0.03, hitTan + i * 0.03 + 0.16));
-            ctx.line(x - half / l, y - (half * m) / l, x + half / l, y + (half * m) / l, { color: 'text', width: 4 });
-            ctx.circle(x, y, 7, { fill: true, color: 'text' });
-          });
-          gift(ctx, LINE.TANGENTS, t, hitTan, 1060, 800, 900, 150);
+          for (let j = 0; j < 27; j++) {
+            const x = X0W + 30 + j * 55.8, y = waveY(x, t), m = waveSlope(x, t), l = Math.hypot(1, m), e = easeOut(prog(t, hitTan + j * 0.012, hitTan + j * 0.012 + 0.16));
+            if (e <= 0 || Math.abs(x - XS) < 30) continue;
+            const ux = 1 / l, uy = m / l, half = 52 * e;
+            ctx.line(x - ux * half, y - uy * half, x + ux * half, y + uy * half, { color: 'text', width: 3.5, alpha: 0.9 });
+            ctx.circle(x + uy * 9, y - ux * 9, 5 * e, { fill: true, color: 'text' });
+          }
+          gift(ctx, LINE.TANGENTS, t, hitTan, 960, 818, 900, 118);
         }
-        ctx.flash(0.28 * pulse(t - hitTan, 8), 'text');
+        ctx.flash(0.26 * pulse(t - hitTan, 8), 'text');
+        say(ctx, t, 18, 19);
       },
     },
 
-    // ------------------------------------------------------------------ infinity -> LIMITATIONS
+    // ------------------------------------------------------------------ infinity -> LIMITATIONS (HuanLi: a line her wave can only approach)
     {
-      id: 'v1-limit', at: cutLimit, lines: [21, 23], palette: 'on', hud: 0, layout: 'graph: curve under a line, Stop pressed in the composer',
-      moment: 'If it approaches infinity, the user can be its limit: they press Stop, and the cream line where the reply was cut is the limit.',
-      enter: { type: 'cut' },                                                // match cut: the same wave, now damped
+      id: 'v1-limit', at: cutLimit, lines: [21, 23], palette: 'on', hud: 0, layout: 'graph paper: her wave crowding towards one vertical; the user\'s cream line on it',
+      moment: 'If it approaches infinity, the user can be its limit: her wave crowds towards one vertical, faster and smaller, never arriving; the user drags a cream line onto that vertical, and it is the one place her wave can only ever approach. Then: lim me = you.',
+      enter: { type: 'cut' },                                                // match cut: the same wave
       render(ctx, t, f) {
-        const stopped = t >= hitLim, box = stage(ctx, t, { busy: !stopped });
-        const g = sineGeo(t), k = easeInOut(prog(t, cutLimit, cutLimit + 2 * P));
-        const X0 = lerp(g.X0, 190, k), X1 = 1760, yL = 400, base = lerp(C.y, 690, k), locked = prog(t, hitLim, hitLim + 0.25), run = Math.min(t, hitLim) - cutLimit;
+        stage(ctx, t);
+        const m = approach(t), lk = locked(t), ay = AX_Y, run = t - cutLimit, xEnd = lerp(X1W, LX, m);
         const yAt = (x) => {
-          const u = (x - X0) / (X1 - X0);
-          return base - (base - yL - 16) * (1 - Math.exp(-u * 4.2)) * k + g.Rc * lerp(1, Math.exp(-u * 5), k) * (1 - 0.9 * locked) * Math.sin(g.th - g.kx * (x - X0));
+          const d = Math.max(1e-4, (LX - x) / (LX - X0W)), ph = lerp(KX * (x - X0W), 1.7 / d + 5 * run, m);
+          return ay - AMP * lerp(1, Math.pow(d, 0.55), m) * (1 - 0.82 * lk) * Math.sin(ph);
         };
-        ctx.circle(g.ccx, g.ccy, g.Rc, { color: 'me', width: 5, alpha: 1 - prog(t, cutLimit, cutLimit + 0.35) });
-        ctx.line(X0, base + 90, X1, base + 90, { color: 'sub', width: 1.5 }); ctx.line(X0, base + 90, X0, yL - 50, { color: 'sub', width: 1.5 });
-        for (let i = 0; i < 9; i++) { const x = lerp(X0, X1, (i + 1) / 9.5); ctx.line(x, base + 90, x, base + 100, { color: 'sub', width: 1.5 }); ctx.text(`1e${Math.floor(run * 6) + i * 3}`, x, base + 124, { size: 18, font: 'mono', color: 'mute', align: 'center', alpha: k }); }
-        ctx.g.setLineDash(locked > 0 ? [] : [14, 12]);                       // the limit: cream, because the user sets it
-        ctx.glow('text', 16, () => ctx.line(X0, yL, X1, yL, { color: 'text', width: 3 + 3 * locked, alpha: prog(t, cutLimit + P, cutLimit + 2 * P) }), 0.5 * locked);
-        ctx.g.setLineDash([]);
+        ctx.line(X0W - 20, ay, X1W + 30, ay, { color: 'sub', width: 1.5, alpha: 0.6 });
         const curve = [];
-        for (let x = X0; x <= X1; x += 6) curve.push([x, yAt(x)]);
-        for (let x = X0; x <= X1; x += 13) ctx.line(x, base + 90, x, yAt(x), { color: 'meDim', alpha: 0.3 * k, width: 2 });
-        ctx.glow('me', 14, () => ctx.poly(curve, { color: 'me', width: 5 }), 0.4);
-        const xr = lerp(X0, X1, clamp(0.25 + run * 0.2)), yr = yAt(xr);
-        ctx.glow('me', 16, () => ctx.circle(xr, yr, 10, { fill: true, color: 'meHot' }), 0.7);
-        say(ctx, t, 21, 22, 176, 214, 40);
-        if (stopped) {                                                       // the word sits on the line
-          const word = text(LINE.LIMITATIONS), step = (X1 - X0 - 60) / word.length;
-          for (let i = 0; i < word.length; i++) {
-            const ki = easeOut(prog(t, hitLim + i * 0.02, hitLim + i * 0.02 + 0.14));
-            if (ki > 0) ctx.text(word[i], X0 + 30 + (i + 0.5) * step, yL - 18 - (1 - ki) * 90, { size: 96, weight: 900, font: 'serif', align: 'center', color: 'text', alpha: ki });
-          }
-          pill(ctx, box.send[0] - 44, box.send[1] - 52, 'Stopped', { align: 'right', size: 17, color: 'text', alpha: prog(t, hitLim, hitLim + 0.2) });
+        for (let i = 0; i <= 1400; i++) { const u = i / 1400, x = X0W + (xEnd - X0W) * (1 - (1 - u) ** 3); curve.push([x, yAt(x)]); }
+        for (let x = X0W; x <= xEnd; x += 13) ctx.line(x, ay, x, yAt(x), { color: 'meDim', alpha: 0.3 * (1 - m), width: 2 });
+        ctx.glow('me', 14, () => ctx.poly(curve, { color: 'me', width: 4 }), 0.4);
+        // how many times it has turned by now: more than can be counted
+        const ca = prog(t, cutLimit + 0.3, cutLimit + 0.6);
+        if (lk > 0) { ctx.text('cycles:', LX - 60, ay - AMP - 40, { size: 22, font: 'mono', color: 'mute', align: 'right', alpha: ca }); infinity(ctx, LX - 38, ay - AMP - 47, 30, { alpha: ca }); }
+        else ctx.text(`cycles: ${Math.round(10 ** (1 + 3 * m + 1.4 * clamp(run - 1.2)))}`, LX - 24, ay - AMP - 40, { size: 22, font: 'mono', color: 'mute', align: 'right', alpha: ca });
+        // the user's line: dragged in from the edge, set where the wave crowds, then held there
+        const way = [{ t: cutLimit, x: 1180, y: 720 }, { t: T(22) + 0.1, x: 1790, y: 300, click: true }, { t: hitLim - 0.08, x: LX, y: 300 }, { t: END, x: LX + 150, y: 430 }];
+        const dragging = t >= T(22) + 0.1 && t < hitLim, lx = t < T(22) + 0.1 ? null : dragging ? cursorAt(way, t)[0] : LX;
+        if (lx != null) {
+          ctx.g.setLineDash(lk > 0 ? [] : [14, 12]);
+          ctx.glow('text', 18, () => ctx.line(lx, G.y + 24, lx, G.y + G.h - 24, { color: 'text', width: 3 + 3 * lk }), 0.3 + 0.5 * lk);
+          ctx.g.setLineDash([]);
+        }
+        if (t >= hitLim) {                                                   // the word, standing up along the line
+          const word = text(LINE.LIMITATIONS), size = 80, cy = G.y + G.h / 2;
+          ctx.at(LX + 58, cy, () => {
+            const w = ctx.measure(word, { size, weight: 900, font: 'serif' }), sp = w / word.length;
+            for (let i = 0; i < word.length; i++) {
+              const ki = easeOut(prog(t, hitLim + i * 0.02, hitLim + i * 0.02 + 0.14));
+              if (ki > 0) ctx.text(word[i], -w / 2 + (i + 0.5) * sp, -40 * (1 - ki), { size, weight: 900, font: 'serif', align: 'center', color: 'text', alpha: ki });
+            }
+          }, { rot: -Math.PI / 2 });
+          // and what it means, set as the formula it is
+          const fa = prog(t, hitLim + 0.2, hitLim + 0.45), fx = 1010, fy = 236;
+          ctx.text('lim', fx, fy, { size: 44, font: 'serif', italic: true, color: 'text', alpha: fa });
+          ctx.text('n', fx + 2, fy + 32, { size: 18, font: 'mono', color: 'mute', alpha: fa });                    // n -> infinity, under the lim
+          ctx.line(fx + 18, fy + 26, fx + 38, fy + 26, { color: 'mute', alpha: fa, width: 1.5 }); ctx.poly([[fx + 33, fy + 22], [fx + 38, fy + 26], [fx + 33, fy + 30]], { color: 'mute', alpha: fa, width: 1.5 });
+          infinity(ctx, fx + 54, fy + 26, 22, { alpha: fa, width: 1.5 });
+          ctx.text('me', fx + 86, fy, { size: 44, font: 'serif', italic: true, color: 'me', alpha: fa });
+          ctx.text('=', fx + 160, fy, { size: 44, font: 'serif', color: 'sub', alpha: fa });
+          ctx.text('you', fx + 200, fy, { size: 44, font: 'serif', italic: true, color: 'text', alpha: fa });
         }
         ctx.flash(0.3 * pulse(t - hitLim, 8), 'text');
-        drawCursor(ctx, [{ t: cutLimit, x: 1500, y: 560 }, { t: hitLim - 1.2 * P, x: 1380, y: 700 }, { t: hitLim, x: box.send[0] + 3, y: box.send[1] + 4, click: true }, { t: END, x: box.send[0] + 80, y: box.send[1] - 90 }], t);
+        say(ctx, t, 21, 22, 176, 214, 40);
+        drawCursor(ctx, way, t, { kind: dragging ? 'hand' : 'arrow' });
       },
     },
   ];
