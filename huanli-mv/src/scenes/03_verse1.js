@@ -7,9 +7,15 @@
 //   v1-sine     text riding the wave  the circle unrolls into a sine wave; the cursor sits on it, a TANGENT under it
 //   v1-limit    graph                 the wave is damped towards a line; the user presses Stop: that line is the LIMIT
 // One outline is carried across every cut (match cuts): burst → points → cube silhouette → circle → wave → curve.
+//
+// HuanLi version: the answer comes out of her halo, so its twelve points are the spike tips of the halo, and every
+// point is a small four-pointed star: the point set of line 13 is a constellation, and the cream edges the user is
+// given are the lines drawn between its stars. On the circle, the twelve ticks of her halo's clock stand inside the ring
+// and light up in cream as the user's hand sweeps past them.
 import { chatLayout, composer, header, pill, room, windowFrame } from '../components/chat.js';
 import { drawCursor, pointer } from '../components/cursor.js';
-import { spark, sparkTips } from '../components/motif.js';
+import { morningStar, spark, sparkTips } from '../components/motif.js';
+import { haloAt } from '../components/persona.js';
 import { MESH, drawSegs, project, rot } from '../engine/geom.js';
 import { rand } from '../engine/prng.js';
 import { hullOutline, morph, place } from '../engine/shapes.js';
@@ -34,7 +40,7 @@ export function verse1Shots(env) {
   const AXIS = CUBE.edges.map(([i, j]) => [0, 1, 2].find((c) => Math.abs(CUBE.verts[i][c] - CUBE.verts[j][c]) > 0.1));
   const cam = { cx: C.x, cy: C.y, scale: R_CUBE };
   const spin = (t) => { const k = easeOut(prog(t, START, START + 1.2)); return [0.36 * k, 0.5 * (t - START) * k, 0]; };
-  const TIPS = sparkTips(HANDOFF.cx, HANDOFF.cy, HANDOFF.r, HANDOFF.rot).map(([x, y]) => [(x - C.x) / R_CUBE, (y - C.y) / R_CUBE, 0]);
+  const TIPS = sparkTips(HANDOFF.cx, HANDOFF.cy, HANDOFF.r, HANDOFF.rot, 12, haloAt(START)).map(([x, y]) => [(x - C.x) / R_CUBE, (y - C.y) / R_CUBE, 0]);
   const cubeHull = hullOutline(CUBE.verts.map((v) => project(rot(v, ...spin(cutCircle)), cam)));
   const circle = place('circle', { cx: C.x, cy: C.y, r: R_CIRCLE });
   const G = { x: L.win.x + 2, y: L.head.y + L.head.h + 2, w: L.win.w - 4, h: L.composer.y - L.head.y - L.head.h - 18 };   // the page area the figures live on
@@ -99,14 +105,15 @@ export function verse1Shots(env) {
         pts.forEach((p, i) => {
           const q = project(rot(p, s[0], s[1]), cam), a = i < 8 ? 1 : 1 - gather;
           if (a <= 0) return;
-          ctx.glow('me', 16, () => ctx.circle(q[0], q[1], (hot ? 12 : 9.5) * clamp(q[2], 0.7, 1.3), { fill: true, color: hot ? 'meHot' : 'me', alpha: a }), 0.6 * a);
+          const tw = 1 + 0.12 * Math.sin(t * 6 + i * 2.1);                    // a star of the constellation, twinkling
+          ctx.glow('me', 16, () => morningStar(ctx, q[0], q[1], (hot ? 25 : 19) * tw * clamp(q[2], 0.7, 1.3), { color: hot ? 'meHot' : 'me', alpha: a, rot: 0.15 * Math.sin(t * 1.3 + i) }), 0.6 * a);
           if (i < 8) ctx.text(`p${i}`, q[0] + 16, q[1] - 12, { size: 17, font: 'mono', color: 'mute', alpha: prog(t, START + 0.4, START + 0.9) * (1 - prog(t, hitDim, hitDim + 0.4)) });
         });
         say(ctx, t, 12, 13);
         // the answer carries a code block, as answers do: the live coordinates
         const ca = prog(t, START + P, START + 1.6 * P) * (1 - prog(t, cutCircle - 0.3, cutCircle));
         ctx.rrect(176, 320, 372, 286, 16, { fill: 'raised', stroke: 'line', alpha: ca, shadow: 0.4 });
-        ctx.text('points', 198, 352, { size: 16, font: 'mono', color: 'mute', alpha: ca });
+        ctx.text('constellation', 198, 352, { size: 16, font: 'mono', color: 'mute', alpha: ca });
         pts.slice(0, 8).forEach((p, i) => { if (t > START + P + i * 0.06) ctx.text(`p${i} (${fmt(p[0])},${fmt(-p[1])},${fmt(p[2])})`, 198, 384 + 27 * i, { size: 19, font: 'mono', color: 'sub', alpha: ca }); });
         if (t >= hitDim) {                                                   // the word itself gains dimensions: line, plane, solid
           const dims = Math.min(3, 1 + Math.floor((t - hitDim) / (P / 2))), word = text(LINE.DIMENSION);
@@ -134,6 +141,13 @@ export function verse1Shots(env) {
         spark(ctx, C.x, C.y, R_CIRCLE * 0.86, { color: 'meDim', alpha: 0.28 * relax, core: 0, rot: 0.05 * (t - cutCircle) });   // the motif, inside the circle
         ctx.glow('me', 18, () => ctx.poly(morph(cubeHull, circle, relax), { close: true, color: 'me', width: 5 }), 0.4);
         ctx.line(C.x - 10, C.y, C.x + 10, C.y, { color: 'sub' }); ctx.line(C.x, C.y - 10, C.x, C.y + 10, { color: 'sub' });
+        // the clock of her halo inside the ring: twelve ticks, each lit cream once the user's sweep has passed it
+        const a0t = handAngle(hitCirc), swept0 = TAU * easeInOut(measured);
+        for (let i = 0; i < 12; i++) {
+          const an = -Math.PI / 2 + (i / 12) * TAU, lit = measured > 0 && ((an - a0t) % TAU + TAU) % TAU < swept0, len = i % 3 ? 16 : 30;
+          ctx.line(C.x + Math.cos(an) * (R_CIRCLE - 14), C.y + Math.sin(an) * (R_CIRCLE - 14), C.x + Math.cos(an) * (R_CIRCLE - 14 - len), C.y + Math.sin(an) * (R_CIRCLE - 14 - len),
+            { color: lit ? 'text' : 'meDim', width: lit ? 4 : 2.5, alpha: relax * (lit ? 1 : 0.7) });
+        }
         const rr = R_CIRCLE + 36, fade = 1 - prog(t, hitCirc - 0.1, hitCirc + 0.12);
         onPath(ctx, text(LINE.CIRCLE), (d) => { const a = -2.42 + d / rr; return [C.x + Math.cos(a) * rr, C.y + Math.sin(a) * rr, a + Math.PI / 2]; },
           { size: 54, weight: 600, spacingEm: 0.14, reveal: lyrics.typed(LINE.CIRCLE, t).n, alpha: fade });

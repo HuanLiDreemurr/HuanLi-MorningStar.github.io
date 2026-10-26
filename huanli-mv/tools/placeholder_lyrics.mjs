@@ -1,6 +1,7 @@
 // Stand-in lyric lines for previews made before a complete lyric file is in `音頻&歌詞/`.
 //   node tools/placeholder_lyrics.mjs              -> data/lyrics.json, every line a marker
 //   node tools/placeholder_lyrics.mjs <file>       -> data/lyrics.json, the lines found in <file>, markers for the rest
+//                                                     (and for lines whose words differ from the film's)
 // A marker reads "lyric 07" (keyword lines "LYRIC 07"); line 12, the title of the song, is set as the title.
 // Keep a partial file OUTSIDE the top of `音頻&歌詞/` (e.g. `音頻&歌詞/partial/`): a lyric file there must be
 // complete, or the preview and the export stop (tools/fill_lyrics.mjs). Once a complete file is in place, it
@@ -17,7 +18,8 @@ const TITLE = 11;
 
 const src = process.argv[2] ? path.resolve(process.argv[2]) : null;
 const found = src ? fill(table, fs.readFileSync(src), path.basename(src)) : null;
-const missing = new Set(found ? found.report.missing : table.lines.map((_, i) => i));
+// a line the file does not have, or has with other words than the film's, is shown as a marker until it is settled
+const missing = new Set(found ? [...found.report.missing, ...found.report.wording] : table.lines.map((_, i) => i));
 
 const lines = table.lines.map((L, i) => {
   if (!missing.has(i)) return found.lyrics.lines[i];

@@ -122,19 +122,27 @@ export function thinking(ctx, cx, cy, r, t, { color = 'me', alpha = 1, speed = 1
   spark(ctx, cx, cy, r, { color, alpha, rot: tt * 0.5 * speed, pulse: (i) => 0.66 + 0.34 * Math.sin(tt * 7 * speed - i * 0.62) });
 }
 
-/** Tips of the petals, for match cuts (points that gather into the burst, rays that become lines). */
-export function sparkTips(cx, cy, r, rot = 0, rays = RAYS) {
-  return Array.from({ length: rays }, (_, i) => { const a = rot + (i / rays) * TAU - Math.PI / 2; return [cx + Math.cos(a) * r * LEN[i % 12], cy + Math.sin(a) * r * LEN[i % 12]]; });
+/** Length of tip i as a share of r: the uneven petals of the spark, or the long / short spikes of the halo (morph). */
+const tipLen = (i, m) => lerp(LEN[i % 12], i % 2 ? HALO.short : HALO.long, m);
+
+/** Tips of the petals, for match cuts (points that gather into the burst, rays that become lines). morph: as spark(). */
+export function sparkTips(cx, cy, r, rot = 0, rays = RAYS, morph = 0) {
+  return Array.from({ length: rays }, (_, i) => { const a = rot + (i / rays) * TAU - Math.PI / 2; return [cx + Math.cos(a) * r * tipLen(i, morph), cy + Math.sin(a) * r * tipLen(i, morph)]; });
 }
 
-/** Closed outline of the burst with n points (same convention as shapes.js: starts at 12 o'clock, clockwise). */
-export function sparkOutline(cx, cy, r, { rot = 0, n = 180, rays = RAYS, inner = 0.34 } = {}) {
-  const out = [];
+/**
+ * Closed outline of the burst with n points (same convention as shapes.js: starts at 12 o'clock, clockwise).
+ * morph 1 = the outline of the halo's crown: narrow spikes standing on its ring (the eggplant's calyx keeps 0).
+ */
+export function sparkOutline(cx, cy, r, { rot = 0, n = 180, rays = RAYS, inner = 0.34, morph = 0 } = {}) {
+  const out = [], m = clamp(morph);
   for (let k = 0; k < n; k++) {
     const u = (k / n) * rays, i = Math.floor(u), f = u - i;                 // within petal i: tip at f = 0, valley at f = 0.5
     // (the last petal runs back into petal 0, so the outline closes for any number of rays)
-    const rr = r * (inner + (LEN[i % 12] * (1 - f) + LEN[((i + 1) % rays) % 12] * f - inner) * Math.pow(Math.abs(Math.cos(f * Math.PI)), 1.6));
-    const a = rot + (k / n) * TAU - Math.PI / 2;
+    const rs = inner + (LEN[i % 12] * (1 - f) + LEN[((i + 1) % rays) % 12] * f - inner) * Math.pow(Math.abs(Math.cos(f * Math.PI)), 1.6);
+    const near = f < 0.5 ? i : (i + 1) % rays, d = Math.min(f, 1 - f);     // the halo: distance to the nearest spike, in petal widths
+    const rh = HALO.base + (tipLen(near, 1) - HALO.base) * clamp(1 - d / 0.25);
+    const rr = r * lerp(rs, rh, m), a = rot + (k / n) * TAU - Math.PI / 2;
     out.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
   }
   return out;

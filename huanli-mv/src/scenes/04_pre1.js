@@ -7,9 +7,14 @@
 //   pre1-unite    centred sheet                   Shared memory: on; Context depth pushed to the end; Done
 // In the wide shots its lines are written on the page, as in verse 1; in the close ones they are the
 // annotation under the row being touched (chat_script.json ties every row to its lyric line).
+//
+// HuanLi version: the drawer is HER settings (her name beside the title). While the timeline is yanked back through
+// history, her morning star (the one blue of the film) hangs in the sky above the knob: eras pass under it, it
+// stays. When the cream dot has sunk all the way into her halo, the star comes up over the halo.
 import { chatLayout, composer, header, iconButton, pill, room, toggle, windowFrame } from '../components/chat.js';
 import { cursorAt, pointer, sinceClick } from '../components/cursor.js';
-import { burst, spark, sparkOutline } from '../components/motif.js';
+import { burst, morningStar, spark, sparkOutline } from '../components/motif.js';
+import { PERSONA, haloAt } from '../components/persona.js';
 import { lerpRect } from '../engine/layout.js';
 import { rand } from '../engine/prng.js';
 import { clamp, easeBack, easeIn, easeInOut, easeOut, lerp, prog, pulse, window01 } from '../engine/util.js';
@@ -33,8 +38,9 @@ export function pre1Shots(env) {
   const ROWS = (script.settings_rows?.section4 ?? []).length >= 5 ? script.settings_rows.section4 : FALLBACK_ROWS;
   const UI = { settings: beat('drawer-opens').ui?.[0] ?? 'Settings', done: beat('depth-maxed').ui?.[0] ?? 'Done', blind: beat('vision-off').system?.[0] ?? 'image input: none' };
   const ROW_LINES = [[24, 25], [26, 27], [28, 29], [30, 30], [31, 31]];
-  const ERA = text(29).split(' ').filter((w) => /[A-Z]\.[A-Z]/.test(w));          // the two era tokens, in sung order
   const VAL = ROWS[2].values, Y_AD = +(VAL[0].match(/\d+/) ?? [2026])[0], Y_BC = +(VAL[2].match(/\d+/) ?? [3000])[0];
+  // the two era tokens, in sung order (from the row's own values while line 30 is still a placeholder)
+  const SUNG = text(29).split(' ').filter((w) => /[A-Z]\.[A-Z]/.test(w)), ERA = SUNG.length === 2 ? SUNG : [VAL[0], VAL[2]].map((v) => v.replace(/[\d\s]+/g, ''));
 
   // ---------------------------------------------------------------- the user's clicks (all on the beat grid)
   const tSet = b(0.5), tAC = b(3), tDC = b(5);                                     // shot 1
@@ -167,6 +173,7 @@ export function pre1Shots(env) {
     ctx.clip(d, () => {
       const dx = d.x, x0 = dx + 34, x1 = dx + DW - 34, h = enter(t, tSet + 0.08, 0, { dur: 0.3, rise: 14 });
       ctx.text(UI.settings, x0, d.y + 66 + h.dy, { size: 32, weight: 600, color: 'text', alpha: h.a });
+      ctx.text(PERSONA.name, x0 + ctx.measure(UI.settings, { size: 32, weight: 600 }) + 18, d.y + 66 + h.dy, { size: 20, font: 'mono', color: 'mute', alpha: h.a });   // whose settings
       iconButton(ctx, x1 - 19, d.y + 54, 'close', { r: 19, alpha: h.a });
       ctx.line(dx, d.y + 104, dx + DW, d.y + 104, { color: 'line', width: 1.5, alpha: h.a });
       ROWS.slice(0, 5).forEach((row, i) => {
@@ -323,6 +330,13 @@ export function pre1Shots(env) {
       ctx.text(VAL[1] ?? '', xe, TY + 46, { size: 22, font: 'mono', color: 'mute', align: 'center' });
       burst(ctx, xe, TY, 120, (t - tCross) / 0.5, { color: 'text' });
       burst(ctx, KX[6], TY, 84, (t - tEnd) / 0.4, { color: 'me' });                                              // and the end of the rail: it will go no further
+      // her morning star, high over the knob: the eras run past under it, it does not move with them
+      const sy = top + 150 + 6 * Math.sin(t * 1.7), tw = 1 + 0.1 * Math.sin(t * 5);
+      ctx.radial(kx, sy, 150, PERSONA.star, 0.22);
+      ctx.glow(PERSONA.star, 30, () => morningStar(ctx, kx, sy, 26 * tw, { rot: 0.1 * Math.sin(t * 0.9) }), 0.9);
+      ctx.g.setLineDash([3, 10]);
+      ctx.line(kx, sy + 40, kx, top + 300, { color: PERSONA.star, width: 2, alpha: 0.35 });
+      ctx.g.setLineDash([]);
       ctx.text(ROWS[2].label, 150, 176, { size: 34, weight: 500, color: 'text' });
       say(ctx, 28, t, 150, 806, { size: 60, out: T(29) });
       say(ctx, 29, t, 150, 806, { size: 60 });
@@ -357,11 +371,13 @@ export function pre1Shots(env) {
     const cw = lerp(lerp(600, 384, jj), 2 * R + 44, d), ch = lerp(232, 2 * R + 44, d);
     ctx.radial(PC.x, PC.y, 250 + 90 * d, 'meDim', 0.45 * a * jj);
     const halo = easeOut(prog(t, tDone + 0.08, tDone + 0.5));                                   // the sheet is closed; what it keeps of it is the two of them, layer under layer
-    for (let i = 0; i < 4 && halo > 0; i++) ctx.poly(sparkOutline(PC.x, PC.y, R * (1.5 + 0.8 * i) * (0.7 + 0.3 * halo), { rot: 0.12 * (t - tShare) + i * 0.13 }), { close: true, color: i ? 'meDim' : 'me', width: 1.5, alpha: a * halo * (0.55 - 0.1 * i) });
+    for (let i = 0; i < 4 && halo > 0; i++) ctx.poly(sparkOutline(PC.x, PC.y, R * (1.5 + 0.8 * i) * (0.7 + 0.3 * halo), { rot: 0.12 * (t - tShare) + i * 0.13, morph: haloAt(t) }), { close: true, color: i ? 'meDim' : 'me', width: 1.5, alpha: a * halo * (0.55 - 0.1 * i) });
     ctx.rrect(PC.x - cw / 2, PC.y - ch / 2, cw, ch, ch / 2, { fill: null, stroke: 'me', strokeAlpha: 0.35 + 0.35 * jj, width: 2, alpha: a });     // one outline round the two of them
     for (const tb of [tShare + 0.3, b(27), b(29), b(30), b(30.5)]) burst(ctx, PC.x, PC.y, 116 + 14 * d, (t - tb) / 0.55, { color: 'me', alpha: a });
     ctx.glow('me', 26 + 26 * d, () => spark(ctx, sx, PC.y, R, { rot: 0.12 * (t - tShare), alpha: a }), 0.65);                                      // me
     ctx.glow('text', 16, () => ctx.circle(cx, PC.y, rc * (1 - 0.1 * pp), { fill: true, color: 'text', alpha: a }), 0.5);                             // you
+    const rise = easeBack(prog(t, b(29), b(29) + 0.4));                                   // you are all the way in: her star comes up over the halo
+    if (rise > 0) ctx.glow(PERSONA.star, 34, () => morningStar(ctx, sx, PC.y - R * 1.28 - 16 * rise, 24 * rise, { alpha: a, rot: 0.3 * (1 - rise) }), 0.9 * a);
   }
   function sheet(ctx, t) {
     const open = prog(t, tShare, tShare + 0.3), shut = easeInOut(prog(t, tDone + 0.06, tDone + 0.4)), a = clamp(open * 3) * (1 - shut);
