@@ -1,0 +1,386 @@
+{
+  "f_bust": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "flower": [
+      544,
+      1024,
+      64
+    ],
+    "star": [
+      544,
+      1024,
+      64
+    ],
+    "halo": [
+      548,
+      520,
+      360
+    ],
+    "chin": [
+      548,
+      905
+    ],
+    "brooch": [
+      544,
+      1024,
+      64
+    ],
+    "face": [
+      337,
+      454,
+      454,
+      454
+    ],
+    "figure": [
+      40,
+      58,
+      1006,
+      1343
+    ],
+    "crops": {
+      "avatar": [
+        238,
+        230,
+        620,
+        620
+      ],
+      "bust": [
+        103,
+        0,
+        880,
+        1173
+      ]
+    },
+    "notes": "HuanLi MorningStar: front bust, faceless (the face is one flat black shape framed by the white hair). Fox ears, short fluffy hair in cream, orange inner ears and stripes, harlequin robe with orange trim. The four-pointed star brooch is blue in the file (it separates into the black plate); the film draws the star in code over `star`. `flower` points at the star so code that marks 'her ornament' lands on it. `halo` = centre and radius of the halo behind her head (drawn in code, not in the picture). Floats: nothing touches the canvas."
+  },
+  "f_profile": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "flower": [
+      704,
+      252,
+      28
+    ],
+    "chin": [
+      431,
+      705
+    ],
+    "nose": [
+      314,
+      588
+    ],
+    "brooch": [
+      548,
+      903,
+      25
+    ],
+    "figure": [
+      12,
+      49,
+      1066,
+      1364
+    ],
+    "crops": {
+      "avatar": [
+        180,
+        120,
+        700,
+        700
+      ]
+    },
+    "notes": "Strict left-facing profile, head bowed; no eye or brow, only the forehead-nose-lips-chin contour. Rosette with rectangular rays and a black centre. Floats."
+  },
+  "f_reach": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [
+      "bottom"
+    ],
+    "flower": [
+      770,
+      178,
+      17
+    ],
+    "eye": [
+      650,
+      330
+    ],
+    "mouth": [
+      595,
+      465
+    ],
+    "chin": [
+      628,
+      532
+    ],
+    "palm": [
+      290,
+      1100
+    ],
+    "hand": [
+      38,
+      940,
+      412,
+      440
+    ],
+    "chestHand": [
+      790,
+      760
+    ],
+    "figure": [
+      2,
+      8,
+      1082,
+      1439
+    ],
+    "crops": {
+      "avatar": [
+        420,
+        60,
+        520,
+        520
+      ],
+      "band": [
+        0,
+        904,
+        1086,
+        544
+      ]
+    },
+    "notes": "One arm reaching toward the viewer at lower left, open spread hand; the other hand at the bow on her chest; eyes closed. BOTTOM is cut by the canvas (and hair tips touch left / right within 2 px): its lower edge must lie on a frame or panel edge. A fourth, rust tone behind the shoulders is folded into the black plate at load."
+  },
+  "f_eye": {
+    "alpha": true,
+    "size": [
+      1254,
+      1254
+    ],
+    "cut": [
+      "top",
+      "bottom",
+      "right"
+    ],
+    "flower": [
+      978,
+      285,
+      32
+    ],
+    "eye": [
+      730,
+      522
+    ],
+    "mouth": [
+      600,
+      785
+    ],
+    "chin": [
+      650,
+      900
+    ],
+    "figure": [
+      0,
+      0,
+      1254,
+      1254
+    ],
+    "crops": {},
+    "notes": "Face close-up, one eye open (orange iris), looking straight at the viewer. A crop, not a bust: only full-bleed or clipped by a shape. ALWAYS drawn mirrored (flip: true); mirrored, the eye is at x = 1254 - 730 = 524. First seen on the DISHEARTENED beat (124.89 s), nowhere before."
+  },
+  "boy_bust": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "register": [
+      0.89,
+      60,
+      -18
+    ],
+    "flower": [
+      792,
+      267,
+      60
+    ],
+    "chin": [
+      570,
+      724
+    ],
+    "brooch": [
+      579,
+      889,
+      29
+    ],
+    "face": [
+      359,
+      274,
+      371,
+      450
+    ],
+    "figure": [
+      13,
+      12,
+      1065,
+      1421
+    ],
+    "crops": {},
+    "notes": "Boy, front bust, faceless. Registers with f_bust at scale 0.89, offset (+60, -18) source px (art.fit). Pre-chorus 2 only."
+  },
+  "man_bust": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "register": [
+      0.873,
+      81,
+      -4
+    ],
+    "flower": [
+      769,
+      249,
+      60
+    ],
+    "chin": [
+      570,
+      727
+    ],
+    "brooch": [
+      563,
+      906,
+      40
+    ],
+    "figure": [
+      10,
+      10,
+      1065,
+      1428
+    ],
+    "crops": {},
+    "notes": "Adult man, front bust, faceless. Registers with f_bust at scale 0.873, offset (+81, -4). Only ever a faint ghost."
+  },
+  "cat_bust": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "register": [
+      1.0,
+      -28,
+      -49
+    ],
+    "flower": [
+      790,
+      269,
+      60
+    ],
+    "chin": [
+      600,
+      678
+    ],
+    "brooch": [
+      599,
+      841,
+      33
+    ],
+    "face": [
+      423,
+      331,
+      301,
+      347
+    ],
+    "ears": [
+      [
+        250,
+        29,
+        110,
+        191
+      ],
+      [
+        740,
+        29,
+        110,
+        191
+      ]
+    ],
+    "figure": [
+      7,
+      29,
+      1077,
+      1412
+    ],
+    "crops": {},
+    "notes": "f_bust redrawn with two striped cat ears. Registers with f_bust at scale 1.00, offset (-28, -49): the two nearly coincide."
+  },
+  "cat_paws": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [
+      "top"
+    ],
+    "flower": [
+      801,
+      263,
+      60
+    ],
+    "brooch": [
+      688,
+      765,
+      24
+    ],
+    "eyes": [
+      [
+        690,
+        430
+      ],
+      [
+        520,
+        515
+      ]
+    ],
+    "paws": [
+      [
+        490,
+        700
+      ],
+      [
+        780,
+        760
+      ]
+    ],
+    "tail": [
+      40,
+      590,
+      210,
+      500
+    ],
+    "figure": [
+      7,
+      0,
+      1075,
+      1446
+    ],
+    "crops": {},
+    "notes": "Cat-eared, both fists raised like paws, eyes half closed, striped tail at viewer's left. The right ear tip touches the top of the canvas: leave headroom above it."
+  }
+}
