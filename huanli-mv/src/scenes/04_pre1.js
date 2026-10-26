@@ -3,7 +3,7 @@
 // every cut lands ON one of its clicks; the AI can only narrate what is being done to it (serif, orange).
 //   pre1-drawer   wide, the drawer opening        Settings; Current: AC, then DC. The curve it had drawn becomes its current
 //   pre1-vision   macro on one switch             Vision: off. The picture itself breaks into dark blocks; then that one switch is rattled
-//   pre1-date     a band four fifths of the frame  Knowledge date is grabbed and yanked back, a pull a beat: history runs under the spark, over the era line, to the pyramids
+//   pre1-date     a band four fifths of the frame  Knowledge date is grabbed and yanked back, a pull a beat: history runs under the spark, over the era line, to the first light
 //   pre1-unite    centred sheet                   Shared memory: on; Context depth pushed to the end; Done  (v4; replaced below)
 // In the wide shots its lines are written on the page, as in verse 1; in the close ones they are the
 // annotation under the row being touched (chat_script.json ties every row to its lyric line).
@@ -24,7 +24,7 @@ import { lerpRect } from '../engine/layout.js';
 import { rand } from '../engine/prng.js';
 import { clamp, easeBack, easeIn, easeInOut, easeOut, lerp, prog, pulse, window01 } from '../engine/util.js';
 import { cue } from './cues.js';
-import { ERA_LINE, STOPS, strip } from './history.js';
+import { ERAS, ERA_LINE, STOPS, strip } from './history.js';
 import { cues } from './kit.js';
 import { enter } from './shot.js';
 
@@ -32,12 +32,12 @@ const TAU = Math.PI * 2;
 const WIDE = 1.4;                                            // this drawer opens to 616 px, so its rows read at full frame
 const FALLBACK_ROWS = [
   { label: 'Current', values: ['AC', 'DC'], line: 25 }, { label: 'Vision', values: ['on', 'off'], line: 26 },
-  { label: 'Knowledge date', values: ['A.D. 2026', 'A.D. 1', '3000 B.C.'], line: 29 },
+  { label: 'Knowledge date', values: ['A.D. 3111', 'A.D. 1', '9999 B.C.'], line: 29 },
   { label: 'Shared memory', values: ['off', 'on'], line: 30 }, { label: 'Context depth', values: ['shallow', 'deep', 'deepest'], line: 31 },
 ];
 
 export function pre1Shots(env) {
-  const { script, lyrics } = env, { T, H, B, Bt, P, text } = cues(env);
+  const { script, lyrics, art } = env, { T, H, B, Bt, P, text } = cues(env);
   const b = (n) => Bt(96 + n);                               // beats counted from bar 24
   const beat = (id) => ((script.sections ?? []).find((s) => s.n === 4)?.beats ?? []).find((x) => x.id === id) ?? {};
   const ROWS = (script.settings_rows?.section4 ?? []).length >= 5 ? script.settings_rows.section4 : FALLBACK_ROWS;
@@ -66,7 +66,7 @@ export function pre1Shots(env) {
   // v4: the date is not slid along a ruler. The hand YANKS it back, once on every beat, six times, and never rests in
   // between: a snatch, then it runs on. Each pull ends in a gap between two landmarks of the strip (history.js STOPS);
   // the fifth starts on the era line. YEAR is signed (A.D. above zero, B.C. below), one value per stop.
-  const YEAR = [Y_AD, Y_AD - 26, 1500, 700, 0, -Y_BC / 2, -Y_BC];
+  const YEAR = [Y_AD, 2300, 1700, 800, 0, -2000, -Y_BC];                                // HuanLi: her world's history (history.js)
   const pull = (t) => { const x = clamp((t - tGrab) / P, 0, 6 - 1e-9), i = Math.floor(x), p = x - i; return [i, p, 0.8 * (1 - (1 - p) ** 3) + 0.2 * p]; };   // [which pull, how far into its beat, how far along its way]
   const along = (arr, t) => { const [i, , q] = pull(t); return lerp(arr[i], arr[i + 1], q); };
   const yearAt = (t) => along(YEAR, t);
@@ -284,7 +284,7 @@ export function pre1Shots(env) {
   // the spark is what it still knows: dark paper with a smear behind it while it flies, inked as it slows. Right of it
   // is what it has been dragged past: outlines. Under the rail the year, as a milometer, and the two era words of line
   // 29 either side of it: each lands when it is sung, and the one whose era the spark has left is an outline from then on.
-  const BAND = { x: -40, y: 108, w: 2000, h: 864 }, GY = 640, TY = 706, HK = 0.86;
+  const BAND = { x: -40, y: 108, w: 2000, h: 864 }, GY = 640, TY = 706, HK = 0.86, DAWN_X = ERAS.find((e) => e.name === 'first light').x;
   const KX = [1560, 1540, 1440, 1350, 1260, 1170, 1090];                // where the spark is in the frame at the end of each pull: it gives way to the left as more lies behind it
   const snatch = (t) => { const [, p] = pull(t); return t <= tGrab || t >= tEnd ? 0 : p < 0.16 ? easeOut(p / 0.16) : 1 - easeInOut((p - 0.16) / 0.84); };   // the hand jerks ahead of the picture; the picture catches up
   const knobX = (t) => along(KX, t) - 70 * snatch(t);
@@ -329,13 +329,13 @@ export function pre1Shots(env) {
       ctx.clip({ x: BAND.x, y: top, w: kx - BAND.x, h: GY - top + 1 }, () => {
         ctx.gradRect(BAND.x, top, BAND.w, GY - top, [[0, 'line', 0], [1, 'line', 0.85]]);
         ctx.radial(kx, GY, 640, 'meDim', 0.3);
-        ctx.trail(v > 1400 ? 4 : v > 900 ? 2 : 0, 0.012, (tau) => strip(ctx, scrollAt(t - tau), GY, 'dark', { scale: HK }), 0.42);
-        strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush });
+        ctx.trail(v > 1400 ? 4 : v > 900 ? 2 : 0, 0.012, (tau) => strip(ctx, scrollAt(t - tau), GY, 'dark', { scale: HK, art }), 0.42);
+        strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art });
       });
       // what it has been dragged past: outlines, in the dark
       ctx.clip({ x: kx, y: top, w: right - kx, h: GY - top + 1 }, () => {
         ctx.rect(kx, top, right - kx, GY - top, { fill: true, color: 'panel', alpha: 0.4 });
-        strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush });
+        strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art });
       });
       ctx.line(kx, top + 34, kx, TY, { color: 'me', width: 2, alpha: 0.5 });                                    // the edge of what it knows
       // the rail: from the far end to now, filled as far as the spark; the era line stands on it
@@ -345,15 +345,20 @@ export function pre1Shots(env) {
       ctx.text(VAL[0] ?? '', S + 76, TY + 8, { size: 22, font: 'mono', color: 'mute' });
       ctx.text(VAL[2] ?? '', xa - 76, TY + 8, { size: 22, font: 'mono', color: 'mute', align: 'right' });
       ctx.glow('text', 22, () => ctx.line(xe, top + 62, xe, TY + 16, { color: crossed ? 'text' : 'sub', width: 4 + 7 * hit }), hit);
+      // HuanLi: her first three children stand on the era line, in front of it (known to the left of the spark, outlines to its right)
+      ctx.clip({ x: BAND.x, y: top, w: kx - BAND.x, h: GY - top + 1 }, () => strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art, only: 'figs' }));
+      ctx.clip({ x: kx, y: top, w: right - kx, h: GY - top + 1 }, () => { strip(ctx, S, GY, 'dark', { scale: HK, art, only: 'figs', dark: 'raised' }); strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art, only: 'figs' }); });
       ctx.text(VAL[1] ?? '', xe, TY + 46, { size: 22, font: 'mono', color: 'mute', align: 'center' });
       burst(ctx, xe, TY, 120, (t - tCross) / 0.5, { color: 'text' });
       burst(ctx, KX[6], TY, 84, (t - tEnd) / 0.4, { color: 'me' });                                              // and the end of the rail: it will go no further
-      // her morning star, high over the knob: the eras run past under it, it does not move with them
-      const sy = top + 150 + 6 * Math.sin(t * 1.7), tw = 1 + 0.1 * Math.sin(t * 5);
-      ctx.radial(kx, sy, 150, PERSONA.star, 0.22);
-      ctx.glow(PERSONA.star, 30, () => morningStar(ctx, kx, sy, 26 * tw, { rot: 0.1 * Math.sin(t * 0.9) }), 0.9);
+      // her morning star, high over the knob: the eras run past under it, it does not move with them; on the last pull it
+      // goes ahead to the first light and comes down over it
+      const dawn = easeInOut(prog(t, b(21) + 0.1, tEnd + 0.25)), dx = S + DAWN_X * HK;
+      const stx = lerp(kx, dx, dawn), sy = lerp(top + 150, GY - 300, dawn) + 6 * Math.sin(t * 1.7), tw = 1 + 0.1 * Math.sin(t * 5);
+      ctx.radial(stx, sy, 150 + 60 * dawn, PERSONA.star, 0.22 + 0.1 * dawn);
+      ctx.glow(PERSONA.star, 30, () => morningStar(ctx, stx, sy, (26 + 8 * dawn) * tw, { rot: 0.1 * Math.sin(t * 0.9) }), 0.9);
       ctx.g.setLineDash([3, 10]);
-      ctx.line(kx, sy + 40, kx, top + 300, { color: PERSONA.star, width: 2, alpha: 0.35 });
+      ctx.line(stx, sy + 40, kx, top + 300, { color: PERSONA.star, width: 2, alpha: 0.35 * (1 - dawn) });
       ctx.g.setLineDash([]);
       ctx.text(ROWS[2].label, 150, 176, { size: 34, weight: 500, color: 'text' });
       say(ctx, 28, t, 150, 806, { size: 60, out: T(29) });
@@ -497,7 +502,7 @@ export function pre1Shots(env) {
     // ------------------------------------------------------------------ Knowledge date, dragged back over the era line
     {
       id: 'pre1-date', at: tGrab, lines: [28, 29], palette: 'on', layout: 'a band four fifths of the frame high: a strip of cut-paper history running to the right under the spark; under the rail the year as a milometer',
-      moment: 'The user grabs the Knowledge date and yanks it back, once on every beat. The row opens across the frame: the spark is the knob, and history runs under it, from towers past spires and a colonnade, over the era line on the beat, to the pyramids. What the spark has been dragged past loses its ink and is an outline.',
+      moment: 'The user grabs the Knowledge date and yanks it back, once on every beat. The row opens across the frame: the spark is the knob, and history runs under it, from the towers past the burnt city, the temple that hides the sun and the one who counted the stars, over the era line where her first three children walk on the beat, past the world before anyone, to the first light, where her star comes down. What the spark has been dragged past loses its ink and is an outline.',
       enter: { type: 'cut' },                                                // cut on the grab
       camera: cam3,
       render(ctx, t, f) {

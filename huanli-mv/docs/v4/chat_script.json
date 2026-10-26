@@ -721,7 +721,7 @@
     "section4": [
       { "label": "Current", "control": "segmented", "values": ["AC", "DC"], "default": null, "line": 25 },
       { "label": "Vision", "control": "toggle", "values": ["on", "off"], "default": "on", "line": 26 },
-      { "label": "Knowledge date", "control": "timeline", "values": ["A.D. 2026", "A.D. 1", "3000 B.C."], "default": "A.D. 2026", "line": 29 },
+      { "label": "Knowledge date", "control": "timeline", "values": ["A.D. 3111", "A.D. 1", "9999 B.C."], "default": "A.D. 3111", "line": 29 },
       { "label": "Shared memory", "control": "toggle", "values": ["off", "on"], "default": "off", "line": 30 },
       { "label": "Context depth", "control": "slider", "values": ["shallow", "deep", "deepest"], "default": "shallow", "line": 31 }
     ],
