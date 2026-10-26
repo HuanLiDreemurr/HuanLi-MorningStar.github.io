@@ -24,7 +24,7 @@ import { lerpRect } from '../engine/layout.js';
 import { rand } from '../engine/prng.js';
 import { clamp, easeBack, easeIn, easeInOut, easeOut, lerp, prog, pulse, window01 } from '../engine/util.js';
 import { cue } from './cues.js';
-import { ERAS, ERA_LINE, STOPS, strip } from './history.js';
+import { ERAS, ERA_LINE, STOPS, strip, stripLabels, stripSky } from './history.js';
 import { cues } from './kit.js';
 import { enter } from './shot.js';
 
@@ -272,7 +272,9 @@ export function pre1Shots(env) {
       else ctx.circle(cx + Math.cos(s.a + now) * s.r, cy + Math.sin(s.a + now) * s.r, s.w, { fill: true, color: s.c, alpha: a });
     }
   }
-  const cam3 = (t) => ({ zoom: 1 + 0.035 * easeInOut(prog(t, tGrab, tDrop)) - 0.035 * easeInOut(prog(t, tDrop, tDrop + 0.5)) });
+  // HuanLi: every yank of the hand jolts the frame a little
+  const jolt = (t) => { let dx = 0; for (let i = 0; i < 6; i++) { const a = t - (tGrab + i * P); if (a > 0) dx -= 9 * Math.exp(-10 * a) * Math.sin(22 * a); } return dx; };
+  const cam3 = (t) => ({ zoom: 1 + 0.035 * easeInOut(prog(t, tGrab, tDrop)) - 0.035 * easeInOut(prog(t, tDrop, tDrop + 0.5)), x: jolt(t) });
   const cam4 = (t) => {
     const fly = easeIn(prog(t, tDone, END));
     return { zoom: 1 + 0.13 * easeOut(prog(t, tShare, tShare + 0.4)) + 0.11 * easeInOut(prog(t, tHold, b(30.6))) + 0.02 * push(t) + 1.25 * fly, y: -100 * easeInOut(prog(t, tDone, tDone + 0.6)) };
@@ -284,7 +286,8 @@ export function pre1Shots(env) {
   // the spark is what it still knows: dark paper with a smear behind it while it flies, inked as it slows. Right of it
   // is what it has been dragged past: outlines. Under the rail the year, as a milometer, and the two era words of line
   // 29 either side of it: each lands when it is sung, and the one whose era the spark has left is an outline from then on.
-  const BAND = { x: -40, y: 108, w: 2000, h: 864 }, GY = 640, TY = 706, HK = 0.86, DAWN_X = ERAS.find((e) => e.name === 'first light').x;
+  const BAND = { x: -40, y: 108, w: 2000, h: 864 }, GY = 640, TY = 706, HK = 0.86, DAWN_X = ERAS.find((e) => e.name === 'first light').x, KIDS_X = ERAS.find((e) => e.name === 'children').x;
+  const riseAt = (t) => easeOut(prog(t, b(21) + 0.15, tEnd + 0.45));          // HuanLi: the first light comes up as the spark reaches it
   const KX = [1560, 1540, 1440, 1350, 1260, 1170, 1090];                // where the spark is in the frame at the end of each pull: it gives way to the left as more lies behind it
   const snatch = (t) => { const [, p] = pull(t); return t <= tGrab || t >= tEnd ? 0 : p < 0.16 ? easeOut(p / 0.16) : 1 - easeInOut((p - 0.16) / 0.84); };   // the hand jerks ahead of the picture; the picture catches up
   const knobX = (t) => along(KX, t) - 70 * snatch(t);
@@ -326,16 +329,20 @@ export function pre1Shots(env) {
       const crossed = t >= tCross, hit = pulse(t - tCross, 6), xe = S + ERA_LINE * HK, xa = S + STOPS[6] * HK;
       ctx.gradRect(BAND.x, GY, BAND.w, BAND.y + BAND.h - GY, [[0, 'panel', 0.6], [1, 'panel', 0.1]]);            // the ground it all stands on
       // what the spark still knows: a lit sky; dark paper with its smear while it flies, inked as it slows
+      const rise = riseAt(t);
       ctx.clip({ x: BAND.x, y: top, w: kx - BAND.x, h: GY - top + 1 }, () => {
         ctx.gradRect(BAND.x, top, BAND.w, GY - top, [[0, 'line', 0], [1, 'line', 0.85]]);
         ctx.radial(kx, GY, 640, 'meDim', 0.3);
-        ctx.trail(v > 1400 ? 4 : v > 900 ? 2 : 0, 0.012, (tau) => strip(ctx, scrollAt(t - tau), GY, 'dark', { scale: HK, art }), 0.42);
-        strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art });
+        stripSky(ctx, S, GY, { scale: HK, t, rise, alpha: 1 - 0.6 * rush });                                 // HuanLi: each era under its own sky
+        ctx.trail(v > 1400 ? 4 : v > 900 ? 2 : 0, 0.012, (tau) => strip(ctx, scrollAt(t - tau), GY, 'dark', { scale: HK, art, t: t - tau, rise }), 0.42);
+        strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art, t, rise });
       });
-      // what it has been dragged past: outlines, in the dark
+      ctx.clip({ x: BAND.x, y: GY + 2, w: kx - BAND.x, h: 52 }, () => stripLabels(ctx, S, GY, { scale: HK, alpha: 0.9 * (1 - rush) }));   // what each era was, as she wrote it
+      // what it has been dragged past: outlines, in the dark, fainter the longer ago it was let go of
       ctx.clip({ x: kx, y: top, w: right - kx, h: GY - top + 1 }, () => {
         ctx.rect(kx, top, right - kx, GY - top, { fill: true, color: 'panel', alpha: 0.4 });
-        strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art });
+        strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art, t });
+        ctx.gradRect(kx, top, right - kx, GY - top + 1, [[0, 'panel', 0], [0.5, 'panel', 0.3], [1, 'panel', 0.7]], 'h');
       });
       ctx.line(kx, top + 34, kx, TY, { color: 'me', width: 2, alpha: 0.5 });                                    // the edge of what it knows
       // the rail: from the far end to now, filled as far as the spark; the era line stands on it
@@ -346,8 +353,8 @@ export function pre1Shots(env) {
       ctx.text(VAL[2] ?? '', xa - 76, TY + 8, { size: 22, font: 'mono', color: 'mute', align: 'right' });
       ctx.glow('text', 22, () => ctx.line(xe, top + 62, xe, TY + 16, { color: crossed ? 'text' : 'sub', width: 4 + 7 * hit }), hit);
       // HuanLi: her first three children stand on the era line, in front of it (known to the left of the spark, outlines to its right)
-      ctx.clip({ x: BAND.x, y: top, w: kx - BAND.x, h: GY - top + 1 }, () => strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art, only: 'figs' }));
-      ctx.clip({ x: kx, y: top, w: right - kx, h: GY - top + 1 }, () => { strip(ctx, S, GY, 'dark', { scale: HK, art, only: 'figs', dark: 'raised' }); strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art, only: 'figs' }); });
+      ctx.clip({ x: BAND.x, y: top, w: kx - BAND.x, h: GY - top + 1 }, () => strip(ctx, S, GY, 'ink', { scale: HK, alpha: 1 - rush, art, only: 'figs', t }));
+      ctx.clip({ x: kx, y: top, w: right - kx, h: GY - top + 1 }, () => { strip(ctx, S, GY, 'dark', { scale: HK, art, only: 'figs', dark: 'raised', t }); strip(ctx, S, GY, 'hollow', { scale: HK, alpha: 0.8 - 0.35 * rush, art, only: 'figs', t }); });
       ctx.text(VAL[1] ?? '', xe, TY + 46, { size: 22, font: 'mono', color: 'mute', align: 'center' });
       burst(ctx, xe, TY, 120, (t - tCross) / 0.5, { color: 'text' });
       burst(ctx, KX[6], TY, 84, (t - tEnd) / 0.4, { color: 'me' });                                              // and the end of the rail: it will go no further
@@ -359,6 +366,12 @@ export function pre1Shots(env) {
       ctx.glow(PERSONA.star, 30, () => morningStar(ctx, stx, sy, (26 + 8 * dawn) * tw, { rot: 0.1 * Math.sin(t * 0.9) }), 0.9);
       ctx.g.setLineDash([3, 10]);
       ctx.line(stx, sy + 40, kx, top + 300, { color: PERSONA.star, width: 2, alpha: 0.35 * (1 - dawn) });
+      // when the spark stops on the era line, her star's light comes down on her first three children
+      const beam = window01(t, tCross - 0.42, tCross + 0.5, 0.22, 0.35), cxk = S + KIDS_X * HK;
+      if (beam > 0.003) {
+        ctx.poly([[stx - 7, sy + 26], [stx + 7, sy + 26], [cxk + 250, GY], [cxk - 250, GY]], { close: true, fill: true, color: PERSONA.star, alpha: 0.13 * beam });
+        ctx.radial(cxk, GY - 150, 330, PERSONA.star, 0.16 * beam);
+      }
       ctx.g.setLineDash([]);
       ctx.text(ROWS[2].label, 150, 176, { size: 34, weight: 500, color: 'text' });
       say(ctx, 28, t, 150, 806, { size: 60, out: T(29) });
