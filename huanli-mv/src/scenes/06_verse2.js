@@ -1,127 +1,125 @@
 // Section 6 — VERSE 2 (bar 40, 1:14.2 → bar 48, 1:29.0). State: warm.
-// Four role-play requests, and the user never waits for an answer to finish. v4: the first three share one grammar
-// (eight beats each), and on every noun the film leaves the interface for a plate (plates_verse2.js):
+// Four role-play requests, and the user never waits for an answer to finish.
 //
-//   v2-ask1      74.19  interface   the user clicks Send: the request flies up out of the composer, her answer begins
-//   v2-eggplant  74.65  PLATE       on the noun she IS the eggplant (code characters, its own purple); cut open on the
-//                                   next downbeat; on the keyword its colour leaves it and what it holds is drawn
-//                                   out of it, cream, as molecules (fibre, protein, sugar)
-//   v2-ask2      77.65  interface   Send again (the request was typed at the foot of the plate while she answered)
-//   v2-tomato    78.34  PLATE       the tomato: the same grammar (lycopene, vitamin C, vitamin E)
-//   v2-ask3      81.34  interface   Send again
-//   v2-cat       82.04  PLATE       herself in characters; on the noun the cat ears; developed into three solid inks,
-//                                   her purr as tabby stripes; on the keyword the stripes are given
-//   v2-ask4      85.04  interface   the fourth request; on the kick the lights go down round the user's bubble
-//   v2-proof     85.50  PLATE       a proof without its cream plate; a sun behind the void of her face; the missing
-//                                   plate slides over from the user's bubble and registers on the keyword
+// HuanLi version (segment 3, v2): THE SCHOOL PLAY, on the stage of chorus 1 (stage.js, plates_v2.js). Each request is
+// typed into the prompter's box at the foot of the stage and comes up out of it on the click; she plays the part asked
+// for, like a child in a school play, in a costume, under one spotlight. Each keyword is a board let down from the flies.
+//
+//   v2-ask1      74.19  stage   close on the prompter's box: the click on its send button; the request comes up onto
+//                               the stage; her answer begins
+//   v2-eggplant  74.65  stage   on the noun she is in an eggplant costume (the fruit set in its own data, code characters,
+//                               its own purple), her head through a hole in it, its calyx for a hat. On the next downbeat
+//                               she turns round in it; on the keyword what it is made of leaves it, cream, for the user,
+//                               the empty costume drops through the trap, and she is herself again
+//   v2-ask2      77.65  stage   the next request, sent (it was typed in the box while she answered)
+//   v2-tomato    78.34  stage   the tomato costume; she hops in it on the downbeat; the same giving
+//   v2-ask3      81.34  stage   the next request
+//   v2-cat       82.04  stage   herself; on the noun's last word a puff of paper smoke and she is the tabby; her purr goes
+//                               out in rings, and on the keyword they turn cream and roll out over the house
+//   v2-ask4      85.04  stage   the fourth request; on the kick the stage lights go down, all but the request
+//   v2-proof     85.50  stage   no costume for this one: one light; she points, printed without her cream plate, hardly
+//                               there. Her halo lights on the noun. The user's pointer comes up out of the house as a
+//                               hand and touches her fingertip on the keyword: the cream runs into her, her star lights,
+//                               and her name goes up over the stage. Then the pointer goes down to the stage manager's desk
 //
 // A plate comes in on the noun (cues.js: where the noun begins, snapped to the half-beat grid) and is ended by the
-// user's next click on Send. Where the plates' own events fall: plates_verse2.js.
-//
-// HuanLi version (plates_v2.js): she made a world, so what she is asked to be she makes. The eggplant and the tomato
-// GROW out of the foot of the sheet on the noun (stem, leaves, a flower, and the fruit out of the flower) before the
-// original's grammar takes over; the tabby is printed over her (stripes, paws, tail); and "be god" is no role for her:
-// pointing, printed without her cream plate, she is hardly there until the user's pointer, become a hand, touches
-// her fingertip on the keyword. Then the cream runs into her, her star lights and her name is signed.
-import { chatLayout, composer, header, room, windowFrame } from '../components/chat.js';
-import { drawCursor } from '../components/cursor.js';
+// user's next click on send.
 import { burst } from '../components/motif.js';
-import { frameRect } from '../engine/layout.js';
-import { clamp, easeBack, prog } from '../engine/util.js';
-import { meBubble, meIn, youBubble } from './bubbles.js';
+import { clamp, easeOut, lerp, prog, pulse } from '../engine/util.js';
+import { meBubble, meIn, youBox, youBubble } from './bubbles.js';
 import { cue } from './cues.js';
 import { cues } from './kit.js';
-import { plateCreation, plateGrow, plateTabby } from './plates_v2.js';
+import { arrow } from './plates_chorus.js';
+import { plateCostume, plateGod, plateTabby } from './plates_v2.js';
+import { DESK } from './plates_p2.js';
+import { STAGE, backWall, boards, curtains, house, onStage, prompter, spotlight, valance } from './stage.js';
 
-/** The four requests: [noun cue, its lines (two sung lines and the keyword), what precedes it in the thread (the keyword before)]. */
+/** The four requests: [noun cue, her line that starts as it is sent, the keyword before it]. */
 const REQ = [['nounEggplant', 44, 43], ['nounTomato', 47, 46], ['nounTabby', 50, 49], [null, 53, 52]];
 
-/** Where the pointer is when verse 2 ends: on the Settings button of the header, which the next section clicks (screen px, full view). */
-export const PRE2_POINTER = (() => { const L = chatLayout({ side: 0 }); return [L.head.x + L.head.w - 176 + 3, L.head.y + 33 + 4]; })();
+/** Where the pointer is when verse 2 ends: on the Gender switch of the stage manager's desk, which the next section opens on. */
+export const PRE2_POINTER = DESK.gender;
 
 export function verse2Shots(env) {
-  const { art, script, lyrics, features } = env, { T, B, Bt, text } = cues(env);
+  const { script, lyrics, features } = env, { T, B, Bt, text } = cues(env);
   const CARDS = script.cards_section6 ?? [], BEATS = (script.sections ?? []).find((s) => s.n === 6)?.beats ?? [];
   const req = (i) => CARDS[i]?.request ?? BEATS[i]?.you?.[0] ?? '';
-  // cuts: Send, noun, Send, noun, Send, noun, Send, lights down. All on the grid: a noun's time is snapped to the half-beat.
+  const TITLE = script.title ?? '', HOLD = script.composer_placeholder ?? '';
+  // cuts: send, noun, send, noun, send, noun, send, lights down. All on the grid: a noun's time is snapped to the half-beat.
   const SEND = [B(40), Bt(167.5), Bt(175.5), Bt(183.5)], NOUN = [0, 1, 2].map((k) => features.snapHalf(cue(REQ[k][0]))), DARK = Bt(184.5), END = B(48);
+  /** Where a request rests on the stage once it has come up (the god plate keeps the fourth one there). */
+  const REST = { xr: 1640, y: 230, size: 44 };
 
-  // =============================================================================== the interface: the lower thread and the composer, close
-  const W0 = chatLayout({ side: 0 }), TH = W0.thread, BTN = [W0.composer.x + W0.composer.w - 44, W0.composer.y + W0.composer.h - 40];
-  /** Where things stand in the thread (world px): the last keyword, small; the request; her answer. The fourth request is set larger. */
-  const ROW = (k) => (k < 3 ? { prev: 502, you: [594, 36], me: [716, 50] } : { prev: 392, you: [470, 40], me: [626, 50] });
-  const G = [{ x: 430, y: 452, w: 1060, h: 596.25 }, { x: 444, y: 470, w: 1030, h: 579.375 }, { x: 400, y: 440, w: 1100, h: 618.75 }, { x: 180, y: 380, w: 1371.43, h: 771.43 }];
-  const CAM = G.map((r) => frameRect(r)), TILT = [0, -0.02, 0.016, 0];
-  /** World px -> screen px under the (still) camera of glimpse k. */
-  const onScreen = (k, [x, y]) => [(x - 960 - CAM[k].x) * CAM[k].zoom + 960, (y - 540 - CAM[k].y) * CAM[k].zoom + 540];
-  const REST = [1440, 590];                                           // where the pointer waits after the fourth Send (world px)
-
-  /** The user's request, thrown up out of the composer (ghosted while it flies); it lands with a small overshoot. */
-  function thrown(ctx, str, t, at, xr, y, size) {
-    const fly = (tt) => { const k = prog(tt, at, at + 0.28); if (k > 0) youBubble(ctx, xr, y + (1 - easeBack(k)) * 300, str, { size, alpha: clamp(k * 4) }); };
-    if (t < at + 0.28) ctx.trail(4, 0.018, (tau) => fly(t - tau), 0.4); else fly(t);
+  // =============================================================================== the requests: close on the prompter's box
+  /** A request leaving the box at `at`: up out of the slot and onto the stage, where it rests. */
+  function slip(ctx, t, at, str, rest = REST) {
+    if (t < at) return;
+    const k = easeOut(prog(t, at, at + 0.3)), b = youBox(ctx, str, rest.size);
+    if (k >= 1) { youBubble(ctx, rest.xr, rest.y, str, { size: rest.size }); return; }
+    const to = [rest.xr - b.w / 2, rest.y + b.h / 2], from = [STAGE.hood.cx, STAGE.prompt.y + 34], ctl = [lerp(from[0], to[0], 0.3), to[1] + 120];
+    const p = [0, 1].map((i) => (1 - k) * (1 - k) * from[i] + 2 * (1 - k) * k * ctl[i] + k * k * to[i]);
+    ctx.at(p[0], p[1], () => youBubble(ctx, b.w / 2, -b.h / 2, str, { size: rest.size, alpha: clamp(k * 4) }), { scale: lerp(0.5, 1, k) });
   }
-  /** Glimpse k: the user has just clicked Send on request k. */
-  function glimpse(ctx, t, k) {
-    const cut = SEND[k], [, line, kw] = REQ[k], R = ROW(k), dark = k === 3 ? clamp((t - Bt(184)) * 30) : 0;
-    room(ctx, { art, name: 'tea', alpha: 0.5, t, dim: 0.5 });
-    windowFrame(ctx, W0, { glass: 0.95 });
-    ctx.radial(960, 700, 640, 'meDim', 0.34);
-    header(ctx, W0, { t, title: script.title ?? '', presence: 'online' });
-    meBubble(ctx, TH.x, R.prev, text(kw), { size: 30, weight: 700, hot: true, alpha: 0.6 });        // the word before, still in the thread
-    if (t >= T(line)) meIn(ctx, t, T(line), TH.x, R.me[0], text(line), { size: R.me[1], n: lyrics.typed(line, t).n, fly: 140 });
-    composer(ctx, W0.composer, { placeholder: script.composer_placeholder ?? '', t, send: 'busy' });
-    burst(ctx, BTN[0], BTN[1], 46, (t - cut) / 0.45, { color: 'text' });
-    // the fourth time the lights go down on the kick: only the user's message stays lit, and it is cream paper already
-    if (dark > 0) { const g = ctx.g; g.save(); g.setTransform(ctx.scale, 0, 0, ctx.scale, 0, 0); ctx.rect(0, 0, 1920, 1080, { fill: true, color: 'panel', alpha: 0.9 * dark }); g.restore(); ctx._font = ''; }
-    thrown(ctx, req(k), t, cut - 0.06, TH.x + TH.w, R.you[0], R.you[1]);
-    if (dark > 0) {
-      meBubble(ctx, TH.x, R.me[0], text(line), { size: R.me[1], n: lyrics.typed(line, t).n, alpha: dark });          // (her line is being sung: it stays readable)
-      const b = youBubble(ctx, TH.x + TH.w, R.you[0], req(k), { size: R.you[1], alpha: 0 });
-      ctx.rrect(b.x, b.y, b.w, b.h, Math.min(b.h * 0.42, R.you[1] * 0.95), { fill: 'text', alpha: dark });
-      b.lines.forEach((ln, i) => ctx.text(ln, b.x + b.padX, b.y + b.padY + (i + 0.76) * R.you[1] * 1.28, { size: R.you[1], weight: 500, color: 'bg', alpha: dark }));
-    }
-    drawCursor(ctx, k === 3 ? [{ t: cut, x: BTN[0] + 3, y: BTN[1] + 4 }, { t: DARK, x: REST[0], y: REST[1] }] : [{ t: cut, x: BTN[0] + 3, y: BTN[1] + 4 }, { t: cut + 0.6, x: BTN[0] + 46, y: BTN[1] + 40 }], t, { scale: 1.5 });
+  function ask(ctx, t, k) {
+    const cut = SEND[k], [, line, kw] = REQ[k], dark = k === 3 ? clamp((t - Bt(184)) * 30) : 0;
+    house(ctx);
+    backWall(ctx, {});
+    spotlight(ctx, 960, [960, 862], 360, 1 - 0.8 * dark);
+    onStage(ctx, env, k === 2 ? 'bust' : 'bust', 960, 600, { halo: { alpha: 0.8, color: 'meDim' } });
+    boards(ctx, t, { lit: 1 - dark, glow: 0.7 * (1 - dark) });
+    curtains(ctx, 1);
+    valance(ctx, { title: TITLE, lit: 1, t });
+    meBubble(ctx, 240, 452, text(kw), { size: 34, weight: 700, hot: true, alpha: 0.6 });              // the word before, still on the stage
+    if (t >= T(line)) meIn(ctx, t, T(line), 240, 530, text(line), { size: 54, n: lyrics.typed(line, t).n, fly: 140 });
+    const P = prompter(ctx, t, { text: t < cut ? req(k) : '', placeholder: HOLD, lit: 1, send: pulse(t - cut, 9) });
+    burst(ctx, P.send[0], P.send[1], 60, (t - cut) / 0.45, { color: 'text' });
+    // the fourth time the lights go down on the kick: only the user's request is left lit
+    if (dark > 0) { const g = ctx.g; g.save(); g.setTransform(ctx.scale, 0, 0, ctx.scale, 0, 0); ctx.rect(0, 0, 1920, 1080, { fill: true, color: 'panel', alpha: 0.86 * dark }); g.restore(); ctx._font = ''; }
+    slip(ctx, t, cut, req(k), { xr: 1680, y: 560, size: 44 });          // (in view of this close shot; the plates show it higher up)
+    const tip = [P.send[0] + 2, P.send[1] + 3];                       // the pointer clicked send, and lingers
+    arrow(ctx, tip[0] + 12, tip[1] + 12, 6, { color: 'bg', edge: null }); arrow(ctx, tip[0], tip[1], 6 * (1 - 0.08 * pulse(t - cut, 12)), { color: 'text', edge: 'bg' });
   }
-  const ask = (k, until, moment, layout) => ({
-    id: `v2-ask${k + 1}`, at: SEND[k], lines: [REQ[k][1], REQ[k][1]], palette: 'warm', hud: 0, moment, layout, enter: { type: 'cut' },
-    camera: (t) => { const p = prog(t, SEND[k], until), c = CAM[k]; return k === 3 ? c : { x: c.x, y: c.y - 6 * p, zoom: c.zoom * (1 + 0.03 * p), rot: TILT[k] }; },
-    render: (ctx, t) => glimpse(ctx, t, k),
+  const CAM = { zoom: 1.32, x: 0, y: 236 };
+  const askShot = (k, moment) => ({
+    id: `v2-ask${k + 1}`, at: SEND[k], lines: [REQ[k][1], REQ[k][1]], palette: 'warm', hud: 0, moment, enter: { type: 'cut' },
+    layout: 'stage, close on its foot: the prompter\'s box with the request in it, its send button; her answer beginning above',
+    camera: (t) => { const p = prog(t, SEND[k], SEND[k] + 0.6); return { ...CAM, zoom: CAM.zoom * (1 + 0.03 * p), y: CAM.y - 20 * p }; },
+    render: (ctx, t) => ask(ctx, t, k),
   });
 
   // =============================================================================== the plates
-  /** What the user types at the foot of plate k while she answers: the next request. */
+  /** What the user types into the prompter's box while she answers: the next request. */
   const next = (k, a, z) => ({ text: req(k + 1), from: Bt(a), to: Bt(z) });
-  const B4 = { text: req(3), xr: onScreen(3, [TH.x + TH.w, 0])[0], y: onScreen(3, [0, ROW(3).you[0]])[1], size: ROW(3).you[1] * CAM[3].zoom };
+  const base = { title: TITLE, hold: HOLD };
 
   return [
-    ask(0, NOUN[0], 'The user asks her to pretend to be an eggplant: the click on Send throws the request up out of the composer, and her answer begins under it.', 'interface: close on the lower thread and the composer: the request flying up at the right, her line starting at the left'),
+    askShot(0, 'The user asks her to pretend to be an eggplant: the click on send, and the request comes up out of the prompter\'s box onto the stage; her answer begins.'),
     {
       id: 'v2-eggplant', at: NOUN[0], lines: [44, 46], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: a stem shooting up out of the foot of the sheet at the right, two leaves, a purple flower; the eggplant swelling out of the flower and leaning across the sheet in code characters and its own purple; cut in two; then a hollow outline, its colour leaving to the right as cream; the keyword on the foot of the sheet',
-      moment: 'On the noun she MAKES the eggplant: a plant grows out of the ground in a breath, flowers, and the fruit swells out of the flower, its data still settling into characters, in its own colour. On the next downbeat it is cut open; on the keyword the colour leaves it and what it holds is drawn out of it, cream, as molecules: fibre, protein, sugar, each with its name, its formula and its weight. Only its outline is left. The user is already typing the next request; their click on Send ends the plate.',
-      render: (ctx, t) => plateGrow(ctx, env, { t, kind: 'eggplant', at: NOUN[0], settle: cue('nounEggplantEnd'), open: Bt(164), hit: T(46), word: text(46), lines: [44, 45], next: next(0, 164.75, 166.75) }),
+      layout: 'stage: her in an eggplant costume centre stage under one spotlight, her head through a hole in it, its calyx for a hat; her lines at stage left; the keyword on a board let down from the flies',
+      moment: 'On the noun she is in it: an eggplant costume, the fruit set in its own data in code characters, in its own purple, her head through a hole in it. On the next downbeat she turns round in it. On the keyword what it is made of leaves it row by row, cream, towards the user; the empty costume drops through the trap and she is herself again. The user is already typing the next request into the box.',
+      render: (ctx, t) => plateCostume(ctx, env, { ...base, t, kind: 'eggplant', at: NOUN[0], settle: cue('nounEggplantEnd'), open: Bt(164), hit: T(46), word: text(46), lines: [{ i: 44 }, { i: 45 }], next: next(0, 164.75, 166.75) }),
     },
-    ask(1, NOUN[1], 'The next request is sent before her last word has died away: now a tomato.', 'interface: the same corner of the thread, a little closer and tilted'),
+    askShot(1, 'The next request is sent before her last word has died away: now a tomato.'),
     {
       id: 'v2-tomato', at: NOUN[1], lines: [47, 49], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: a vine out of the foot of the sheet, an orange flower, the tomato swelling out of it in the middle of the sheet in characters and its own red; its top lifted off, the cut face showing; then hollow, its colour leaving to the right as cream; the keyword on the foot',
-      moment: 'On the noun she makes the tomato: the vine, the flower, the fruit. On the next downbeat its top is lifted off; on the keyword what it holds is drawn out of it in cream, as molecules: its own red (lycopene), vitamin C, vitamin E. The next request is typed at the foot of the sheet meanwhile.',
-      render: (ctx, t) => plateGrow(ctx, env, { t, kind: 'tomato', at: NOUN[1], settle: cue('nounTomatoEnd'), open: Bt(172), hit: T(49), word: text(49), lines: [47, 48], next: next(1, 172.75, 174.9) }),
+      layout: 'stage: her in a tomato costume centre stage, her head through it, its calyx for a hat; the keyword on a board let down from the flies',
+      moment: 'On the noun she is in a tomato costume, its own red, set in its data. On the next downbeat she hops in it. On the keyword what it is made of leaves it for the user, cream, and the empty costume drops through the trap.',
+      render: (ctx, t) => plateCostume(ctx, env, { ...base, t, kind: 'tomato', at: NOUN[1], settle: cue('nounTomatoEnd'), open: Bt(172), hit: T(49), word: text(49), lines: [{ i: 47 }, { i: 48 }], next: next(1, 172.75, 174.9) }),
     },
-    ask(2, NOUN[2], 'Third request, sent as fast as the others: a cat, a tabby.', 'interface: the same corner of the thread, from a little further left'),
+    askShot(2, 'Third request, sent as fast as the others: a cat, a tabby.'),
     {
       id: 'v2-cat', at: NOUN[2], lines: [50, 52], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: her bust at the left with her halo behind her; then the tabby printed over her (stripes on her fur, paws up, a striped tail); her purr as a row of tabby stripes from her to the right edge; the keyword on the foot',
-      moment: 'She answers as herself; on the last word of the noun the tabby is printed over her in a few frames, a bar of light running down the sheet: stripes on her fur, her paws up, a striped tail (she has the ears already). On the next downbeat her purr stands beside her as tabby stripes. On the keyword the stripes turn cream and leave towards the user; the cat stays.',
-      render: (ctx, t) => plateTabby(ctx, env, { t, at: NOUN[2], ears: cue('nounCat'), develop: Bt(180), hit: T(52), word: text(52), lines: [50, 51], next: next(2, 181, 183.1) }),
+      layout: 'stage: her centre stage under one spotlight; a puff of paper smoke; the tabby; her purr in rings either side of her; the keyword on a board let down from the flies',
+      moment: 'She answers as herself; on the noun\'s last word a puff of paper smoke, and she is the tabby: stripes, paws up, a striped tail. On the next downbeat her purr goes out from her in rings. On the keyword the rings turn cream and roll out over the house, to the user.',
+      render: (ctx, t) => plateTabby(ctx, env, { ...base, t, at: NOUN[2], ears: cue('nounCat'), develop: Bt(180), hit: T(52), word: text(52), lines: [{ i: 50 }, { i: 51 }], next: next(2, 181, 183.1) }),
     },
-    ask(3, DARK, 'Fourth request: be god. On the kick the lights of the interface go down, and only the user\'s message is left lit.', 'interface: the thread and the composer, wider; then dark but for the user\'s bubble at the upper right'),
+    askShot(3, 'Fourth request: be god. On the kick the stage lights go down, and only the user\'s request is left lit.'),
     {
       id: 'v2-proof', at: DARK, lines: [53, 55], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: her at the left, pointing to the right, printed in orange and black only; the user\'s request as cream paper at the upper right; the user\'s pointer, become a hand, reaching for her fingertip from the right (the two hands of the Creation of Adam); the keyword on the foot, in orange',
-      moment: 'No role this time: she is the god of her world. But printed without her cream plate she is hardly there (her fur and her robe are cream), only her halo, lit on the noun, and the ink of her pattern. The user\'s pointer turns into a hand, as a pointer does over something it can click, and reaches for her pointing finger; on the keyword the fingertips touch and the cream runs into her from there: she is whole, her star lights, her name is signed beside her. Cream is the user: they are the proof that she exists. Then the pointer leaves for the settings.',
-      render: (ctx, t) => plateCreation(ctx, env, { t, at: DARK, sun: cue('nounGod'), slide: Bt(188), hit: T(55), word: text(55), lines: [53, 54, 56], bubble: B4, rest: onScreen(3, REST), restScale: 1.5 * CAM[3].zoom, to: PRE2_POINTER, leave: Bt(191), until: END }),
+      layout: 'stage, dark: one spotlight; her pointing to the right, hardly there; the user\'s request at the upper right; the user\'s pointer coming up from the house as a hand to her fingertip; the keyword on a board let down from the flies',
+      moment: 'No costume for this one: she is the god of her world. But printed without her cream plate she is hardly there (her fur and her robe are cream), only her halo, lit on the noun, and the ink of her pattern. The user\'s pointer comes up out of the house as a hand and reaches for her pointing finger; on the keyword the fingertips touch and the cream runs into her from there: she is whole, her star lights, and her name goes up over the stage in place of the play\'s title. Cream is the user: they are the proof that she exists. Then the pointer goes down to the stage manager\'s desk.',
+      render: (ctx, t) => plateGod(ctx, env, { ...base, t, at: DARK, sun: cue('nounGod'), slide: Bt(188), hit: T(55), word: text(55), lines: [{ i: 53 }, { i: 54 }, { i: 56 }], bubble: { text: req(3), ...REST }, rest: [1560, 1010], to: PRE2_POINTER, leave: Bt(191), until: END }),
     },
   ];
 }
