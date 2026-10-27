@@ -26,7 +26,7 @@ import { outline, smoothPath } from './trace.js';
 import { clamp } from './util.js';
 
 /** The silhouettes (assets/character/<key>.png; sources and what each shows: docs/v4/PLAN.md §4). All the art there is. */
-export const INK_NAMES = ['f_bust', 'f_profile', 'f_reach', 'f_eye', 'boy_bust', 'man_bust', 'cat_bust', 'cat_paws', 'kid_fox', 'kid_leopard', 'kid_cat'];   // HuanLi: + her first three children (history strip)
+export const INK_NAMES = ['f_bust', 'f_profile', 'f_reach', 'f_eye', 'boy_bust', 'man_bust', 'cat_bust', 'cat_paws', 'kid_fox', 'kid_leopard', 'kid_cat', 'mv_bust', 'mv_boy'];   // HuanLi: + her first three children (history strip), the original heroine and boy (the wall of personas)
 export const ART_NAMES = INK_NAMES;
 
 const LUM_H = 240;                              // working resolution of the luminance maps: the longer side

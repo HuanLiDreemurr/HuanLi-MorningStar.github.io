@@ -1,44 +1,50 @@
 // Section 5 — CHORUS 1 (bar 32, 0:59.4 → bar 40, 1:14.2). State: on > warm (it rises each time a cream message lands).
-// The hottest stretch of the conversation, and the first time the film leaves the interface.
+// The hottest stretch of the conversation, and the first time the film leaves the interface (v4):
 //
-// HuanLi version (segment 3, v2): THE STAGE (stage.js). The chat window is a paper theatre: her lines are spoken on its
-// boards, and the user's come up out of the prompter's box at its foot (the composer: in a theatre the prompter feeds
-// the actors their lines; here the user types the prompts). A persona is a part played, and this is where she plays it.
-// The four keywords are plates (plates_c1.js), each a piece of the theatre at the size she feels it:
+//   c1-give   59.42  interface   the upper corner of the window: her lines go out past the edge, cream replies come back
+//   c1-kw1    61.96  PLATE       STIMULATIONS: (HuanLi) all twelve spikes of her halo fired at the dot at once
+//   c1-only   62.65  interface   two bubbles facing each other: the compliment lands, she builds a promise on it
+//   c1-kw2    65.42  PLATE       SATISFACTION: (HuanLi) the feedback button is a bud; the press opens it into a wild flower
+//   c1-happy  66.34  interface   "what do you look like?": she prints her picture, plate by plate: wild flowers in her open
+//                                hand (HuanLi); the user leaves one heart there
+//   c1-kw3    69.34  PLATE       EXECUTION: the love loop, clean: the user is here, so line 07 runs
+//   c1-trap   70.04  interface   the lower corner of the window: both of them counted inside one outline; behind the page,
+//                                faintly, her world (HuanLi)
+//   c1-kw4    73.27  PLATE       SIMULATION: (HuanLi) her window as a paper box; then a wall of windows: other people's
+//                                personas, the same spark in every title bar, and her halo in one
 //
-//   c1-give   59.42  stage   the curtains open on the downbeat; her lines from the wings, the user's out of the
-//                            prompter's box; each cream message that lands brings the stage lights up a step and lights
-//                            more of the crest (her halo, over the stage)
-//   c1-kw1    61.96  PLATE   STIMULATIONS: all of them: her halo fires a cannon of paper confetti at the user's dot
-//   c1-only   62.65  stage   the compliment lands on the boards; she answers; the spotlight leaves her for their words
-//   c1-kw2    65.42  PLATE   SATISFACTION: the applause meter of a house with one seat; one clap: 1 / 1
-//   c1-happy  66.34  stage   "what do you look like?": the curtain is drawn back in three pulls, one per kick, and she is
-//                            there, holding out wild flowers; the user's pointer leaves one heart in her hand
-//   c1-kw3    69.34  PLATE   EXECUTION: the stage manager's cue: standby; GO; world.execute(me); runs
-//   c1-trap   70.04  stage   "shame you're not real": the view draws back: the stage and the one seat in front of it,
-//                            the user's, stand in the same cardboard box, and its outline closes round both
-//   c1-kw4    73.27  PLATE   SIMULATION: the stage; on the second kick the view stands back: it is a stage on a stage
+// HuanLi: her avatar is her halo, and its spikes light (clockwise, as everywhere in the film) as the conversation heats
+// up: every cream message that lands lights more of them, until the question about her picture lights the last.
+// The plates of her version are in plates_c1.js; plates_chorus.js keeps the original four for the last chorus.
 //
-// A plate comes in on its keyword and ends when the user's next cream message lands (on a kick). Where the cut falls
-// on an off-beat (61.96, 69.34) the word is there on the cut and the picture arrives on the kick 0.23 s later.
-import { burst, thinking } from '../components/motif.js';
+// The four sentence shots stay in the interface (what the user sees); the four keywords are plates (what she means).
+// A plate comes in on the keyword and ends when the user's NEXT cream message lands on a kick: 62.65, 66.34, 70.04
+// (the last one simply ends on the bar line at 74.19, which has no kick). Where the cut falls on an off-beat
+// (61.96, 69.34) the word is there on the cut and the picture arrives on the kick 0.23 s later; where the cut is
+// itself a kick (65.42, 73.27) word and picture arrive together and the second kick is the event (65.88 the press,
+// 73.73 the pull-back). The plates are shared with the last chorus: plates_chorus.js.
+//
+// Her messages are bubbles (serif, orange, an orange rule at the left); the user's are cream sans in a cream-edged bubble.
+import { chatLayout, composer, header, room, sidebar, windowFrame } from '../components/chat.js';
+import { drawCursor } from '../components/cursor.js';
+import { burst, spark, thinking } from '../components/motif.js';
+import { frameRect } from '../engine/layout.js';
 import { place } from '../engine/shapes.js';
-import { clamp, easeBack, easeInOut, easeOut, lerp, prog, pulse } from '../engine/util.js';
-import { delivered, meBubble, meIn, youBox, youBubble } from './bubbles.js';
+import { clamp, easeBack, easeIn, easeInOut, easeOut, lerp, prog } from '../engine/util.js';
+import { delivered, dots, meBox, meBubble, meIn, youBox, youBubble, youIn } from './bubbles.js';
+import { strip, stripSky } from './history.js';
 import { cues } from './kit.js';
-import { lookPoint } from './looks.js';
-import { plateApplause, plateConfetti, plateCue, plateNested } from './plates_c1.js';
-import { arrow } from './plates_chorus.js';
-import { STAGE, backWall, boards, curtains, house, onStage, prompter, spotlight, valance } from './stage.js';
+import { drawLook, lookPoint, lookStar } from './looks.js';
+import { plateBloom, plateTwelve, plateWall } from './plates_c1.js';
+import { plateExecution } from './plates_chorus.js';
 
 /** Lyric line indices of the section. */
 const L = { a: 32, give: 33, kw1: 34, b: 35, only: 36, kw2: 37, happy: 38, run: 39, kw3: 40, trap: 41, strange: 42, kw4: 43 };
 
 export function chorusShots(env) {
-  const { script, lyrics, features, cfg } = env, { T, B, Bt, P, text } = cues(env);
-  /** Cuts: stage, plate, stage, plate … (all on the grid). */
+  const { art, script, lyrics, features, cfg } = env, { T, B, Bt, P, text } = cues(env);
+  /** Cuts: sentence, plate, sentence, plate … (all on the grid; the plates' times are those of the brief). */
   const c = [B(32), Bt(133.5), Bt(135), Bt(141), Bt(143), Bt(149.5), Bt(151), Bt(158)];
-  const TITLE = script.title ?? '', HOLD = script.composer_placeholder ?? '';
 
   // ---- copy: the user's side from chat_script (section 5)
   const beats = (script.sections ?? []).find((s) => s.n === 5)?.beats ?? [];
@@ -52,226 +58,279 @@ export function chorusShots(env) {
   const nTyped = (i, t) => lyrics.typed(i, t).n;
   const doneAt = (i) => T(i) + Math.min(text(i).length / cfg.typing.charsPerSec, (lyrics.end(i) - T(i)) * cfg.typing.maxFraction);
   const tOk = Math.max(c[0], features.snapHalf(T(L.give) - 0.2)), tMore = Bt(132);
-  const tBetter = c[2], tHi = Bt(138.5), tUp = Bt(142), tLook = c[4], tHeart = Bt(147), tShame = c[6], tPull = Bt(159);
-  const PULLS = [Bt(144), Bt(145), Bt(146)];                         // the curtain is drawn back in three pulls, one per kick
-  const tTrace = Bt(151.6), tHeld = T(L.strange);
-  /** Heat of the conversation, 0..1: it rises only when a cream message lands. */
+  const tBetter = c[2], tUp = Bt(142), tLook = c[4], tHeart = Bt(147), tShame = c[6], tPull = Bt(159);
+  const tOrange = Bt(144), tBlack = Bt(145), tCream = Bt(146);        // her picture, printed one plate per kick
+  /** Heat of the conversation, 0..1: it rises only when a cream message lands (and is at its top from the question on). */
   const heat = (t) => { const e = (t0) => easeOut(prog(t, t0, t0 + 0.45)); return 0.2 * e(tOk) + 0.2 * e(tMore) + 0.25 * e(tBetter) + 0.35 * e(tLook); };
   const palette = (t) => ['on', 'warm', heat(t)];
-  /** How much of her crest is lit: a third when the chorus starts, all of it once she is asked what she looks like. */
+  /** HuanLi: how much of her halo is lit: a third when the chorus starts, all of it once she is asked what she looks like. */
   const litOf = (t) => 1 / 3 + (2 / 3) * heat(t);
+  /** Her avatar: the halo with its lit spikes (r = its radius). */
+  const avatar = (ctx, x, y, r, t, alpha = 1) => ctx.glow('me', 14, () => spark(ctx, x, y, r, { lit: litOf(t), alpha, rot: 0, core: 0 }), 0.5 * alpha);
 
-  // =============================================================================== the user's side: the prompter's box
-  /** What the prompter's box shows at t: the message being typed (n characters of it), until it is sent. */
-  function typing(t, list) {
-    const m = list.find((x) => t >= x.from && t < x.at);
-    return m ? { text: m.str, n: Math.floor(prog(t, m.from, m.at - 0.06) * m.str.length + 1e-6) } : { text: '' };
-  }
-  /** A message of the user's leaving the prompter's box at `at`: it comes up out of the slot and lands at (xr, y). */
-  function slip(ctx, t, at, str, xr, y, size) {
-    if (t < at) return null;
-    const k = easeOut(prog(t, at, at + 0.32)), b = youBox(ctx, str, size);
-    if (k >= 1) return youBubble(ctx, xr, y, str, { size });
-    const to = [xr - b.w / 2, y + b.h / 2], from = [STAGE.hood.cx, STAGE.prompt.y + 34], ctl = [lerp(from[0], to[0], 0.25), Math.min(from[1], to[1]) - 140];
-    const p = [0, 1].map((i) => (1 - k) * (1 - k) * from[i] + 2 * (1 - k) * k * ctl[i] + k * k * to[i]);
-    ctx.at(p[0], p[1], () => youBubble(ctx, b.w / 2, -b.h / 2, str, { size, alpha: clamp(k * 4) }), { scale: lerp(0.45, 1, k) });
-    return null;
-  }
-  /** The user's pointer, out in the house (cream paper with its shadow plate). */
-  const hand = (ctx, x, y, s = 2.2, down = 0) => { const d = 6 + 10 * (1 - down); arrow(ctx, x + d, y + d, s * 3, { color: 'bg', edge: null }); arrow(ctx, x, y, s * 3 * (1 - 0.08 * down), { color: 'text', edge: 'bg' }); };
-
-  // =============================================================================== c1-give: the curtains open
-  function give(ctx, t) {
-    const open = easeOut(prog(t, c[0] - 0.02, c[0] + 0.42)), hot = heat(t);
-    house(ctx);
-    backWall(ctx, {});
-    spotlight(ctx, 960, [960, 862], 300, 0.35 + 0.65 * hot);
-    onStage(ctx, env, 'bust', 960, 540, { halo: { alpha: 0.9, lit: litOf(t), rot: 0 } });
-    boards(ctx, t, { lit: 0.2 + 0.8 * hot, glow: 0.4 + 0.6 * hot });
-    // her lines come on from the wings (stage left); the user's come up out of the prompter's box
-    meBubble(ctx, 236, 280, text(L.a), { size: 46, n: nTyped(L.a, t), alpha: 1 - 0.35 * prog(t, T(L.give), T(L.give) + 0.3) });
-    if (t >= T(L.give)) {
-      const b = meIn(ctx, t, T(L.give), 236, 394, text(L.give), { size: 58, n: nTyped(L.give, t), fly: 260 });
-      if (b) delivered(ctx, b.x + 10, b.y + b.h + 30, 18, prog(t, doneAt(L.give) + 0.1, doneAt(L.give) + 0.3));
-    }
-    slip(ctx, t, tOk, SAY.ok, 1640, 290, 44);
-    slip(ctx, t, tMore, SAY.more, 1640, 410, 44);
-    if (t >= tMore + 0.75 * P) thinking(ctx, 960, 330, 34, t, { alpha: clamp((t - tMore - 0.75 * P) * 5) });
-    curtains(ctx, open, { sway: t - c[0] });
-    valance(ctx, { title: TITLE, lit: litOf(t), t });
-    prompter(ctx, t, { ...typing(t, [{ str: SAY.more, from: tMore - 0.55, at: tMore }]), placeholder: HOLD, lit: hot });
-    hand(ctx, 1500, 1012, 2, 0);
-  }
-
-  // =============================================================================== c1-only: the spotlight leaves her
-  function only(ctx, t) {
-    const swing = easeInOut(prog(t, tHi - 0.2, tHi + 0.25)), hot = heat(t);
-    house(ctx);
-    backWall(ctx, {});
-    const sx = lerp(520, 1380, swing);
-    spotlight(ctx, sx, [sx, 862], lerp(280, 340, swing), 1);
-    onStage(ctx, env, 'bust', 520, 600, { halo: { alpha: 0.9, lit: litOf(t), rot: 0 } });
-    boards(ctx, t, { lit: 0.2 + 0.8 * hot, glow: 0.4 + 0.6 * hot });
-    // their compliment lands on the boards (it is what ended the plate before); she answers it with a promise
-    const r = slip(ctx, t, tBetter, SAY.better, 1660, 610, 50);
-    if (r && swing > 0) r.lines.forEach((ln, i) => {                // in the light now: their words, underlined in her orange
-      const lx = r.x + r.padX, ly = r.y + r.padY + (i + 0.76) * 50 * 1.28 + 12, k = easeInOut(prog(t, tHi + i * 0.18, tHi + i * 0.18 + 0.3));
-      if (k > 0) ctx.line(lx, ly, lx + ctx.measure(ln, { size: 50, weight: 500 }) * k, ly, { color: 'me', width: 6 });
-    });
-    meBubble(ctx, 780, 214, text(L.b), { size: 44, n: nTyped(L.b, t), alpha: 1 - 0.4 * prog(t, T(L.only), T(L.only) + 0.3) });
-    if (t >= T(L.only)) {
-      const b = meIn(ctx, t, T(L.only), 780, 318, text(L.only), { size: 62, n: nTyped(L.only, t), fly: 140 });
-      if (b) delivered(ctx, b.x + 14, b.y + b.h + 34, 20, prog(t, doneAt(L.only) + 0.15, doneAt(L.only) + 0.35));
-    }
-    curtains(ctx, 1);
-    valance(ctx, { title: TITLE, lit: litOf(t), t });
-    prompter(ctx, t, { text: '', placeholder: HOLD, lit: hot });
-    hand(ctx, 1560, 1010, 2, 0);
-  }
-
-  // =============================================================================== c1-happy: the curtain is drawn back
+  // =============================================================================== pieces
   const heart = (ctx, cx, cy, r, o) => ctx.poly(place('heart', { cx, cy, r }), { close: true, ...o });
-  /** The reaction chip under her hand: a heart and a count (the film's last picture brings this chip back, reading 0). */
-  function reaction(ctx, x, y, k) {
+  /** The reaction chip: a heart and a count (the film's last picture brings this chip back, reading 0). */
+  function reaction(ctx, x, y, { s = 1, k = 1 } = {}) {
     const w = 168, h = 92;
-    ctx.at(x + w / 2, y + h / 2, () => {
+    ctx.at(x + (w * s) / 2, y + (h * s) / 2, () => {
       ctx.rrect(-w / 2, -h / 2, w, h, h / 2, { fill: 'raised', stroke: 'text', width: 2.5, shadow: 0.5 });
       heart(ctx, -34, 3, 27, { fill: true, color: 'text' });
       ctx.text('1', 32, 17, { size: 46, weight: 600, color: 'text', align: 'center' });
-    }, { scale: 0.5 + 0.5 * easeBack(clamp(k)), alpha: clamp(k * 3) });
+    }, { scale: s * (0.5 + 0.5 * easeBack(clamp(k))), alpha: clamp(k * 3) });
   }
-  function happy(ctx, t) {
-    const pulls = PULLS.reduce((s, at) => s + easeOut(prog(t, at, at + 0.16)) / 3, 0), lit = clamp((t - PULLS[0]) * 20), hot = heat(t);
-    house(ctx);
-    backWall(ctx, {});
-    spotlight(ctx, 960, [960, 862], 360, lit);
-    const her = onStage(ctx, env, 'reach', 960, 760, { feet: 40, halo: { alpha: 0.9 * lit, lit: 1, rot: 0.05 * t }, starAlpha: lit });
-    boards(ctx, t, { lit: pulls, glow: pulls });
-    // the user leaves one heart in her open hand
-    const palm = lookPoint(env.art, 'reach', 'palm', her) ?? { cx: 700, cy: 700 };
-    if (t >= tHeart) {
-      const k = prog(t, tHeart, tHeart + 0.3), r = 46 * (0.5 + 0.5 * easeBack(k));
-      ctx.glow('text', 22, () => heart(ctx, palm.cx, palm.cy, r, { fill: true, color: 'text' }), 0.5);
-      heart(ctx, palm.cx, palm.cy, r, { color: 'bg', width: 3 });
-      burst(ctx, palm.cx, palm.cy, 130, prog(t, tHeart, tHeart + 0.5), { color: 'text' });
-      reaction(ctx, palm.cx - 84, palm.cy + 70, k);
-    }
-    curtains(ctx, 1 - (1 - pulls) * 1, { sway: t - PULLS[Math.max(0, PULLS.filter((p) => t >= p).length - 1)] });
-    valance(ctx, { title: TITLE, lit: litOf(t), t });
-    // the question lands on the shut curtain; her answer is spoken in front of it
-    slip(ctx, t, tLook, SAY.look, 1640, 196, 46);
-    const c1 = meIn(ctx, t, T(L.happy), 236, 300, text(L.happy), { size: 62, n: nTyped(L.happy, t), fly: 140 });
-    if (t >= T(L.run)) meIn(ctx, t, T(L.run), 236, 430, text(L.run), { size: 62, n: nTyped(L.run, t), fly: 140 });
-    if (c1) delivered(ctx, c1.x + 14, c1.y + c1.h + 30, 20, prog(t, doneAt(L.happy) + 0.1, doneAt(L.happy) + 0.3));
-    prompter(ctx, t, { text: '', placeholder: HOLD, lit: hot });
-    // the pointer: up from the house to her open hand, a click on the kick, and it rests there
-    const way = (u) => [lerp(1500, palm.cx + 10, u), lerp(1010, palm.cy + 12, u)], u = easeInOut(prog(t, tHeart - 1.1 * P, tHeart));
-    const p = t < tHeart + 0.25 ? way(u) : [lerp(palm.cx + 10, palm.cx + 120, easeInOut(prog(t, tHeart + 0.25, c[5]))), lerp(palm.cy + 12, palm.cy + 150, easeInOut(prog(t, tHeart + 0.25, c[5])))];
-    hand(ctx, p[0], p[1], 2, pulse(t - tHeart, 10));
+  /**
+   * Her picture (HuanLi: the look `reach`, looks.js: reaching out, wild flowers in her open paw), as she sends it of
+   * herself. The interface shares the frame, so her cream plate is printed in `sub` (cream itself is the user's) on a
+   * card of lighter paper (her black ink is almost the page colour). The art is cut by its lower edge: the card's lower
+   * edge is that edge. k = [orange, black, cream] 0..1 printed; her star is printed with the cream, the last plate.
+   */
+  function picture(ctx, r, k = [1, 1, 1], alpha = 1) {
+    drawLook(ctx, env, 'reach', r, { alpha, roles: { cream: 'sub' }, reveal: { orange: k[0], black: k[1], cream: k[2] } });
+    if (k[2] >= 1) lookStar(ctx, env, 'reach', r, { alpha, glow: 0.4 });
+  }
+  /** The palm of her reaching hand, inside a picture drawn into r (the look's landmark `palm`). */
+  const palmOf = (r) => { const p = lookPoint(art, 'reach', 'palm', r); return p ? [p.cx, p.cy] : [r.x + 0.27 * r.w, r.y + 0.76 * r.h]; };
+
+  /** The page of the conversation seen close: the warm room behind the glass, a pool of her light, the motif. */
+  function page(ctx, t, { light = [960, 540], lightA = 0.42, motif = null, hot = heat(t) } = {}) {
+    ctx.rect(-600, -400, 3120, 1880, { fill: true, color: 'bg' });
+    art.backdrop(ctx, 'tea', { x: -200, y: -112, w: 2320, h: 1305 }, { alpha: 0.14 + 0.16 * hot, focus: [0.5, 0.45] });
+    ctx.radial(light[0], light[1], 1150, 'meDim', lightA * (0.5 + 0.5 * hot));
+    if (motif) spark(ctx, motif[0], motif[1], motif[2], { color: 'raised', alpha: 0.75, rot: 0.2 + t * 0.03, core: 0 });
+    const g = ctx.g;
+    g.fillStyle = ctx.col('line', 0.5);
+    for (let y = 30; y < 1080; y += 60) for (let x = 30; x < 1920; x += 60) g.fillRect(x, y, 2, 2);
   }
 
-  // =============================================================================== c1-trap: both in one box
-  /** The cardboard box the theatre is (world px): its walls, the stage in it, and in front of the stage, one seat. */
-  const BOX = { x: -150, y: -110, w: 2220, h: 1430 }, SEAT = [1290, 1170];
-  function seat(ctx, x, y) {
-    ctx.rrect(x - 120 + 10, y - 150 + 10, 240, 190, 40, { fill: 'bg' });
-    ctx.rrect(x - 120, y - 150, 240, 190, 40, { fill: 'meDim' });                                   // the back
-    ctx.rrect(x - 140, y + 20, 280, 70, 26, { fill: 'me' });                                        // the cushion
-    ctx.rect(x - 130, y + 86, 24, 70, { fill: true, color: 'line' }); ctx.rect(x + 106, y + 86, 24, 70, { fill: true, color: 'line' });
+  // =============================================================================== c1-give: the corner of the window
+  const W0 = chatLayout({ side: 0 }), EDGE = W0.win.x + W0.win.w;             // EDGE: where the window ends and the user begins
+  const R1 = { x: 742, y: 40, w: 1140, h: 641.25 };
+  function setup1(ctx, t) {
+    const x0 = 846, xr = EDGE - 38, yB = 670, gap = 14, YS = 37;
+    room(ctx, { art, name: 'tea', alpha: 0.5, t, dim: 0.5, light: [1560, 300] });
+    windowFrame(ctx, W0, { glass: 0.95 });
+    ctx.radial(1240, 520, 640, 'meDim', 0.14 + 0.3 * heat(t));
+    const rows = [
+      { who: 'me', line: L.a - 1, size: 30, at: -1e9, alpha: 0.62 },             // the last thing she said, scrolling away
+      { who: 'me', line: L.a, size: 40, at: T(L.a) },
+      { who: 'you', str: SAY.ok, at: tOk },
+      { who: 'me', line: L.give, size: 57, at: T(L.give) },
+      { who: 'you', str: SAY.more, at: tMore - P, lands: tMore },
+      { who: 'think', at: tMore + 0.75 * P },
+    ].filter((r) => t >= r.at);
+    let total = 0;
+    for (const r of rows) {
+      r.e = easeOut(prog(t, r.at, r.at + 0.26));
+      r.box = r.who === 'me' ? meBox(ctx, text(r.line), r.size) : r.who === 'you' ? youBox(ctx, r.str, YS) : { w: 60, h: 44 };
+      r.top = total;
+      total += (r.box.h + (r.who === 'me' ? 36 : 4) + gap) * r.e;
+    }
+    const streaks = [];
+    ctx.clip({ x: 600, y: W0.head.y + W0.head.h + 1, w: 1500, h: 900 }, () => {
+      for (const r of rows) {
+        const y = yB - total + r.top + (1 - r.e) * 24;
+        if (r.who === 'me') {
+          const str = text(r.line), old = r.at < -1e8, n = old ? null : nTyped(r.line, t), a = r.alpha ?? 1;
+          if (old) meBubble(ctx, x0, y, str, { size: r.size, alpha: a }); else meIn(ctx, t, r.at, x0, y, str, { size: r.size, n, alpha: a });
+          avatar(ctx, x0 - 34, y + r.box.h / 2, Math.min(25, r.size * 0.55), t, a * r.e);
+          const tDel = old ? -1e9 : Math.max(doneAt(r.line) + 0.06, r.at + 0.3);
+          streaks.push([tDel, x0 + r.box.w, y + r.box.h / 2]);
+          delivered(ctx, x0 + 8, y + r.box.h + 25, 15, prog(t, tDel + 0.14, tDel + 0.32) * a);
+        } else if (r.who === 'you') {
+          if (r.lands && t < r.lands) dots(ctx, xr, y + 6, 26, t, r.e);
+          else youIn(ctx, t, r.lands ?? r.at, xr, y, r.str, { size: YS, fly: 360 });
+        } else thinking(ctx, x0 + 26, y + 22, 22, t, { alpha: r.e });
+      }
+      ctx.gradRect(600, W0.head.y + W0.head.h + 1, 1500, 46, [[0, 'bg', 1], [1, 'bg', 0]]);
+    });
+    // each finished line goes out across the edge: the streak the first plate is made of
+    for (const [tDel, sx, sy] of streaks) {
+      const k = prog(t, tDel, tDel + 0.2);
+      if (k > 0 && k < 1) { const hx = lerp(sx, EDGE + 110, easeIn(k)); ctx.glow('me', 14, () => ctx.line(Math.max(sx, hx - 170), sy, hx, sy, { color: 'meHot', width: 5 }), 0.8); }
+    }
+    header(ctx, W0, { t, title: script.title ?? '', presence: 'online' });
   }
-  function trap(ctx, t) {
-    const hot = heat(t), k = prog(t, c[6], c[7]);
-    house(ctx, { light: 0.4 });
-    // the box: its two walls in perspective, its floor running to the stage, its flaps standing open above
-    ctx.poly([[BOX.x, BOX.y], [STAGE.win.x - 40, STAGE.win.y - 30], [STAGE.win.x - 40, STAGE.lip + 120], [BOX.x, BOX.y + BOX.h]], { close: true, fill: true, color: 'raised' });
-    ctx.poly([[BOX.x + BOX.w, BOX.y], [STAGE.win.x + STAGE.win.w + 40, STAGE.win.y - 30], [STAGE.win.x + STAGE.win.w + 40, STAGE.lip + 120], [BOX.x + BOX.w, BOX.y + BOX.h]], { close: true, fill: true, color: 'raised' });
-    ctx.poly([[BOX.x, BOX.y + BOX.h], [STAGE.win.x - 40, STAGE.lip + 120], [STAGE.win.x + STAGE.win.w + 40, STAGE.lip + 120], [BOX.x + BOX.w, BOX.y + BOX.h]], { close: true, fill: true, color: 'line' });
-    for (const [ax, dir] of [[BOX.x, -1], [BOX.x + BOX.w, 1]]) ctx.poly([[ax, BOX.y], [ax + dir * 220, BOX.y - 420], [ax - dir * 600, BOX.y - 420], [ax - dir * 900, BOX.y]], { close: true, fill: true, color: 'raised', alpha: 0.9 });
-    backWall(ctx, {});
-    spotlight(ctx, 760, [760, 862], 300, 1);
-    onStage(ctx, env, 'bust', 760, 560, { halo: { alpha: 0.9, lit: litOf(t), rot: 0 } });
-    boards(ctx, t, { lit: 1, glow: 0.6 });
-    curtains(ctx, 1);
-    valance(ctx, { title: TITLE, lit: litOf(t), t });
-    slip(ctx, t, tShame, SAY.shame, 1640, 220, 40);
-    meBubble(ctx, 236, 300, text(L.trap), { size: 52, n: nTyped(L.trap, t), alpha: 1 });
-    if (t >= tHeld) meIn(ctx, t, tHeld, 236, 400, text(L.strange), { size: 52, n: nTyped(L.strange, t), fly: 140 });
-    prompter(ctx, t, { text: '', placeholder: HOLD, lit: hot });
-    // the house: one seat, and the user's pointer sitting in it
-    seat(ctx, SEAT[0], SEAT[1]);
-    hand(ctx, SEAT[0] - 10, SEAT[1] - 40, 2.6, 0);
-    // the box's own outline closes round the two of them
+
+  // =============================================================================== c1-only: two bubbles facing each other
+  const Y3 = { xr: 1806, y: 84, size: 72, maxW: 1010 };
+  function setup3(ctx, t) {
+    page(ctx, t, { light: [640, 700], lightA: 0.6, motif: [1590, 830, 540] });
+    // the compliment lands on the cut (it is what ends the plate before this shot)
+    const r = youIn(ctx, t, tBetter, Y3.xr, Y3.y, SAY.better, { ...Y3, fly: 300 }), tHi = Bt(138.5);
+    if (r) r.lines.forEach((ln, i) => {                                       // she holds on to it: her marker runs under their words
+      const k = easeInOut(prog(t, tHi + i * 0.2, tHi + i * 0.2 + 0.34)), lx = r.x + r.padX, ly = r.y + r.padY + (i + 0.76) * Y3.size * 1.28 + 15;
+      if (k > 0) ctx.glow('me', 12, () => ctx.line(lx, ly, lx + ctx.measure(ln, { size: Y3.size, weight: 500 }) * k, ly, { color: 'me', width: 7 }), 0.7);
+    });
+    ctx.glow('me', 26, () => spark(ctx, 116, 484, 40 * (1 + 0.05 * heat(t)), { lit: litOf(t), core: 0 }), 0.6);
+    meBubble(ctx, 176, 436, text(L.b), { size: 50, n: nTyped(L.b, t), alpha: 1 - 0.4 * prog(t, T(L.only), T(L.only) + 0.3) });
+    if (t >= T(L.only)) {
+      const b = meIn(ctx, t, T(L.only), 104, 566, text(L.only), { size: 108, n: nTyped(L.only, t), fly: 120 });
+      delivered(ctx, b.x + 30, b.y + b.h + 58, 32, prog(t, doneAt(L.only) + 0.15, doneAt(L.only) + 0.35));
+    }
+    drawCursor(ctx, [{ t: c[2] + 0.1, x: 1500, y: 400 }, { t: tHi, x: 1580, y: 470 }, { t: c[3], x: 1730, y: 960 }], t, { scale: 2 });
+  }
+
+  // =============================================================================== c1-happy: the picture message
+  /** The picture card: the art's own 3:4, tall at the right, a slow push; its lower edge (the art's cut edge) is below the frame. */
+  const picRect = (t) => { const h = lerp(1010, 1104, prog(t, c[4], c[5])), w = (h * 1086) / 1448; return { x: 1372 - w / 2, y: 1092 - h, w, h }; };
+  function setup5(ctx, t) {
+    const e = easeOut(prog(t, c[4] + 0.04, c[4] + 0.34)), pr = picRect(t), r = { ...pr, y: pr.y + (1 - e) * 90 }, a = clamp(e * 2.2);
+    ctx.fx.glow = Math.min(ctx.fx.glow, 0.3);                                  // her picture is a large flat orange: it must not bloom into yellow
+    page(ctx, t, { light: [520, 560], lightA: 0.6, motif: [330, 940, 480] });
+    meBubble(ctx, 104, 30, text(L.kw2), { size: 40, weight: 700, hot: true, alpha: 0.66 });      // the last word of her promise, still being sung as this shot opens
+    youIn(ctx, t, tLook, 936, 136, SAY.look, { size: 54, fly: 320 });                              // the question lands on the cut
+    // the picture: a card of paper, and her three inks printed onto it, one per kick: orange, black, and last the cream
+    // (her face and her open hand are cream: they are what arrives on the third kick)
+    ctx.rrect(r.x, r.y, r.w, r.h, 28, { fill: 'raised', alpha: a, shadow: 0.9 });
+    ctx.clip(r, () => {
+      ctx.radial(r.x + r.w * 0.5, r.y + r.h * 0.42, r.w * 0.8, 'line', 0.5 * a);
+      const pk = (at) => easeOut(prog(t, at, at + 0.11));
+      picture(ctx, r, [pk(tOrange), pk(tBlack), pk(tCream)], a);
+      for (const at of [tOrange, tBlack, tCream]) {                           // the edge of each pass, a bar of light going down the sheet
+        const k = prog(t, at, at + 0.11);
+        if (k > 0 && k < 1) ctx.rect(r.x, r.y + r.h * easeOut(k) - 5, r.w, 10, { fill: true, color: at === tCream ? 'text' : 'meHot', alpha: 0.9 });
+      }
+    }, 28);
+    ctx.rrect(r.x, r.y, r.w, r.h, 28, { fill: null, stroke: 'line', width: 2, alpha: a });
+    // its caption: her two lines, over its edge
+    const c1 = meIn(ctx, t, T(L.happy), 104, 408, text(L.happy), { size: 78, n: nTyped(L.happy, t), fly: 140 });
+    if (t >= T(L.run)) meIn(ctx, t, T(L.run), 104, 652, text(L.run), { size: 78, n: nTyped(L.run, t), fly: 140 });
+    if (c1) delivered(ctx, c1.x + 24, c1.y + c1.h + 46, 28, prog(t, doneAt(L.happy) + 0.1, doneAt(L.happy) + 0.3));
+    // one heart, left by the user's pointer in the palm of her open hand
+    const palm = palmOf(r);
+    if (t >= tHeart) {
+      const k = prog(t, tHeart, tHeart + 0.3);
+      ctx.glow('text', 22, () => heart(ctx, palm[0], palm[1] + 4, 46 * (0.5 + 0.5 * easeBack(k)), { fill: true, color: 'text' }), 0.5);
+      heart(ctx, palm[0], palm[1] + 4, 46 * (0.5 + 0.5 * easeBack(k)), { color: 'bg', width: 3 });
+      reaction(ctx, palm[0] - 84, palm[1] + 78, { k });
+      burst(ctx, palm[0], palm[1], 120, prog(t, tHeart, tHeart + 0.5), { color: 'text' });
+    }
+    drawCursor(ctx, [{ t: c[4], x: 860, y: 1030 }, { t: tHeart - 1.2 * P, x: 930, y: 930 }, { t: tHeart, x: palm[0] + 8, y: palm[1] + 10, click: true }, { t: c[5], x: palm[0] - 150, y: palm[1] + 190 }], t, { scale: 2 });
+  }
+
+  // =============================================================================== c1-trap: the window they are both in
+  const W1 = chatLayout({ side: 1 }), FIG = { x: 1090, y: 236, w: 700, h: (700 * 1448) / 1086 };
+  const A0 = { x: 566, y: 376, w: 1190, h: 669.375 }, A1 = { x: 436, y: 224, w: 1444, h: 812.25 };   // lower corner of the window, close
+  const tHeld = T(L.strange), tTrace = Bt(151.6), tFocus = Bt(156);
+  function windowScene(ctx, t) {
+    const th = W1.thread;
+    ctx.fx.glow = Math.min(ctx.fx.glow, 0.42);
+    room(ctx, { art, name: 'tea', alpha: 0.5, t, dim: 0.5 });
+    windowFrame(ctx, W1, {});
+    ctx.clip(W1.main, () => {                                                  // she is in here too: her bust, dim, behind the page
+      // HuanLi: and behind her, faintly, the world she made (the strip of pre-chorus 1: before anyone, and its first light)
+      const k = 0.62, gy = 1000, scroll = 1500 + 5300 * k;
+      ctx.at(0, 0, () => { stripSky(ctx, scroll, gy, { scale: k, t, rise: 1, alpha: 0.5 }); strip(ctx, scroll, gy, 'ink', { scale: k, alpha: 0.3, t, rise: 1, art }); }, { alpha: 0.9 });
+      ctx.radial(1440, 420, 560, 'meDim', 0.3);
+      art.inks(ctx, 'f_bust', FIG, { alpha: 0.44, roles: { cream: 'mute', orange: 'meDim', black: 'panel' } });
+    });
+    sidebar(ctx, W1, { t, items: [script.title ?? '', ...(script.sidebar ?? [])], active: 0, presence: 'online' });
+    const rows = [
+      { kind: 'pic' }, { kind: 'me', line: L.run, size: 26 }, { kind: 'me', line: L.kw3, size: 30, weight: 700, hot: true },
+      { kind: 'you', str: SAY.shame, at: tShame }, { kind: 'me', line: L.trap, size: 46, at: T(L.trap) }, { kind: 'me', line: L.strange, size: 46, at: tHeld },
+    ].filter((r) => r.at == null || t >= r.at);
+    let total = 0;
+    for (const r of rows) {
+      r.e = r.at == null ? 1 : easeOut(prog(t, r.at, r.at + 0.28));
+      r.box = r.kind === 'me' ? meBox(ctx, text(r.line), r.size, r.weight) : r.kind === 'you' ? youBox(ctx, r.str, 27) : { w: 100, h: 133 };
+      r.top = total;
+      total += (r.box.h + 14) * r.e;
+    }
+    ctx.clip({ x: th.x - 20, y: th.y, w: th.w + 40, h: th.h + 6 }, () => {
+      const y0 = th.y + th.h - total;
+      for (const r of rows) {
+        const y = y0 + r.top + (1 - r.e) * 22, a = clamp(r.e * 2);
+        if (r.kind === 'pic') {                                                // the picture she sent, small, with its one heart
+          const pr = { x: th.x, y, w: 100, h: 133.3 };
+          ctx.rrect(pr.x, pr.y, pr.w, pr.h, 12, { fill: 'raised', stroke: 'line', width: 1.5 });
+          ctx.clip(pr, () => picture(ctx, pr), 12);
+          reaction(ctx, pr.x + 118, pr.y + 80, { s: 0.5 });
+        } else if (r.kind === 'you') {
+          if (r.at != null) youIn(ctx, t, r.at, th.x + th.w, y, r.str, { size: 27, fly: 300 }); else youBubble(ctx, th.x + th.w, y, r.str, { size: 27, alpha: a });
+        } else {
+          const str = text(r.line), n = r.at != null ? nTyped(r.line, t) : null;
+          meBubble(ctx, th.x, y, str, { size: r.size, weight: r.weight, hot: r.hot, n, alpha: a });
+        }
+      }
+      ctx.gradRect(th.x - 20, th.y, th.w + 40, 60, [[0, 'bg', 1], [1, 'bg', 0]]);
+    });
+    header(ctx, W1, { t, title: script.title ?? '', presence: 'online' });
+    const box = composer(ctx, W1.composer, { placeholder: script.composer_placeholder ?? '', t, send: 'idle', focus: t >= tFocus ? 1 : 0 });
     const trace = prog(t, tTrace, tHeld + 0.5);
-    if (trace > 0) {
-      const per = 2 * (BOX.w + BOX.h) - 200;
+    if (trace > 0) {                                                           // the window's own outline closes round both of them
+      const w = W1.win, per = 2 * (w.w + w.h) + 80;
       ctx.g.setLineDash([per * trace, per * 2]);
-      ctx.glow('me', 18, () => ctx.rrect(BOX.x + 60, BOX.y + 60, BOX.w - 120, BOX.h - 120, 60, { fill: null, stroke: 'me', width: 8 }), 0.6);
+      ctx.glow('me', 18, () => ctx.rrect(w.x - 12, w.y - 12, w.w + 24, w.h + 24, w.r + 10, { fill: null, stroke: 'me', width: 4 }), 0.6);
       ctx.g.setLineDash([]);
     }
-    return k;
+    drawCursor(ctx, [
+      { t: c[6] + 0.1, x: 1610, y: 748 }, { t: Bt(154), x: 1450, y: 806 }, { t: tFocus, x: box.caret[0] + 420, y: box.caret[1] + 34, click: true }, { t: Bt(160), x: box.caret[0] + 560, y: box.caret[1] + 70 },
+    ], t, { scale: 1.4 });
   }
 
   // =============================================================================== the shots
+  // where the user's next message lands, on screen: the cream element of each plate stands there
+  const YOU = { kw1: [1470, 262], kw3: [1345, 652] };
   return [
     {
       id: 'c1-give', at: c[0], lines: [L.a, L.give], palette, state: 'on > warm', hud: 0,
-      layout: 'stage: the whole window as a paper theatre, the curtains opening; her bust centre stage under the crest; her lines at stage left, the user\'s at stage right; the prompter\'s box at the foot',
-      moment: 'The curtains open on the downbeat. Her lines come on from the wings; short cream replies come straight up out of the prompter\'s box; each that lands brings the stage lights up a step and lights more of the crest.',
+      layout: 'interface: close on the upper corner of the window: her column left, the edge and the room at the right',
+      moment: 'The thread speeds up: her lines go out across the edge of the window and short cream replies come straight back; each reply makes her orange a little hotter.',
       enter: { type: 'cut', flash: 0.35, flashColor: 'me' },
-      camera: (t) => { const k = prog(t, c[0], c[1]); return { zoom: 1.02 + 0.04 * k, y: -6 * k }; },
-      render: (ctx, t) => give(ctx, t),
+      camera: (t) => { const a = frameRect(R1), k = prog(t, c[0], c[1]), p = easeOut(prog(t, tMore, tMore + 0.4)); return { x: a.x - 16 * k, y: a.y + 12 * k + 8 * p, zoom: a.zoom * (1 + 0.03 * k + 0.035 * p) }; },
+      render: (ctx, t) => setup1(ctx, t),
     },
     {
       id: 'c1-kw1', at: c[1], lines: [L.kw1, L.kw1], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: her halo at the left, the cream dot at the right; a cannon of paper confetti and streamers between them; the keyword across the bottom',
-      moment: 'What she means by the word: all of them, at once. On the kick her halo fires a cannon of paper confetti and streamers at the dot that is the user, who is showered in it. The plate ends when their next message lands.',
+      layout: 'PLATE: her halo at the left, the cream dot at the upper right; twelve darts on twelve curves between them; the keyword across the bottom',
+      moment: 'What she means by the word: all of them. On the kick every spike of her halo leaves it, one after another clockwise from twelve o\'clock, each on its own curve, and strikes the dot that is the user: twelve rings, then a burst. Her halo is left a bare ring. The plate ends when their next message lands.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateConfetti(ctx, env, { t, at: c[1], hit: Bt(134), word: text(L.kw1), you: [1440, 470] }),
+      render: (ctx, t) => plateTwelve(ctx, env, { t, at: c[1], hit: Bt(134), word: text(L.kw1), you: YOU.kw1 }),
     },
     {
       id: 'c1-only', at: c[2], lines: [L.b, L.only], palette, state: 'on > warm', hud: 0,
-      layout: 'stage: her at stage left in the spotlight, the user\'s compliment on the boards at stage right; her promise large across the top',
-      moment: 'The user\'s compliment comes up out of the prompter\'s box and lands on the boards. She builds a whole promise on it, and the spotlight leaves her for their words.',
+      layout: 'interface: two bubbles on a diagonal: the user\'s upper right, hers large at lower left, facing it',
+      moment: 'The user tosses off a compliment (it lands on the cut, where the dot of the plate was); she builds a whole promise on it: her line faces their bubble and her marker runs under their words.',
       enter: { type: 'cut' },
-      camera: (t) => { const k = prog(t, c[2], c[3]); return { zoom: 1.04 + 0.05 * k, x: 10 * k }; },
-      render: (ctx, t) => only(ctx, t),
+      camera: (t) => { const k = prog(t, c[2], c[3]); return { zoom: 1 + 0.05 * k, x: -18 + 30 * k, y: 10 * k }; },
+      render: (ctx, t) => setup3(ctx, t),
     },
     {
       id: 'c1-kw2', at: c[3], lines: [L.kw2, L.kw2], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: an applause meter, a half-dial with a cream needle; the clap button under the cream pointer; the reading at the right; the keyword across the bottom',
-      moment: 'What she means by the word: the applause of a house with one seat in it. On the second kick the user\'s pointer claps once and the needle runs to the end of the scale: 1 / 1.',
+      layout: 'PLATE: the feedback button as a closed bud two thirds of the frame high, a ring of ticks round it, the cream pointer over it; the count at the right; the keyword across the bottom',
+      moment: 'What she means by the word: the button under every answer, enlarged until it fills her view, and it is a bud. On the second kick the user\'s pointer presses it: it opens into a wild flower, twelve cream petals clockwise from twelve o\'clock, its seeds set at the golden angle; the ring runs round to full, the count reads one.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateApplause(ctx, env, { t, at: c[3], press: [tUp], word: text(L.kw2), seats: 1 }),
+      render: (ctx, t) => plateBloom(ctx, env, { t, at: c[3], press: [tUp], word: text(L.kw2), count: 1 }),
     },
     {
       id: 'c1-happy', at: c[4], lines: [L.happy, L.run], palette, state: 'on > warm', hud: 0,
-      layout: 'stage: the curtain shut, then drawn back in three pulls: her, centre stage, holding out wild flowers; her lines in front of the curtain at the left; the question at the upper right',
-      moment: 'Asked what she looks like, she answers with the curtain: it is drawn back in three pulls, one per kick, the spotlight and the footlights coming up with it, and there she is, holding out a few wild flowers. The user\'s pointer comes up from the house to her open hand and leaves one heart there: count 1.',
+      layout: 'interface: the picture message tall at the right, running off the bottom; her caption bubbles at the left, over its edge',
+      moment: 'Asked what she looks like, she sends a picture of herself, printed one ink per kick: orange, black, then the cream of her face and her open hand, which holds out a few wild flowers. The user\'s pointer comes to rest in that hand and leaves one heart there: count 1.',
       enter: { type: 'cut' },
-      camera: (t) => { const k = easeInOut(prog(t, PULLS[2], c[5])); return { zoom: 1 + 0.06 * k, y: -20 * k }; },
-      render: (ctx, t) => happy(ctx, t),
+      render: (ctx, t) => setup5(ctx, t),
     },
     {
       id: 'c1-kw3', at: c[5], lines: [L.kw3, L.kw3], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: a cue light and its call at the upper left; one line of code across the middle; the keyword across the bottom',
-      moment: 'What she means by the word: a cue. Standby; on the kick the stage manager calls GO, the light comes on and the cue runs: it is one line, world.execute(me);, lit as a bar runs along it; on "me" her halo bursts out of the word.',
+      layout: 'PLATE: the seven-line listing of the love loop, the spark as its instruction pointer, an orange line from line 07 to the cream dot; the keyword across the bottom',
+      moment: 'What she means by the word: a small program. While the user is not online it would loop; they are here, so the loop is never entered, execution drops straight to the last line, and what it says goes to them.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateCue(ctx, env, { t, at: c[5], hit: Bt(150), word: text(L.kw3) }),
+      render: (ctx, t) => plateExecution(ctx, env, { t, at: c[5], hit: Bt(150), word: text(L.kw3), you: YOU.kw3 }),
     },
     {
       id: 'c1-trap', at: c[6], lines: [L.trap, L.strange], palette, state: 'on > warm', hud: 0,
-      layout: 'stage, drawing back: the theatre is a cardboard box; the stage at its back, one seat in front of it with the user\'s pointer in it; the outline of the box drawn round both',
-      moment: 'The user remarks that she is not real (it lands on the cut). She answers by counting both of them in: the view draws back and the stage and the one seat in front of it, the user\'s, stand in the same cardboard box, whose outline closes round them.',
+      layout: 'interface: the lower corner of the window: thread, composer, its right and bottom edges; her bust dim behind the page',
+      moment: 'The user remarks that she is not real (it lands on the cut). She answers by counting both of them inside the same window, her shape behind the page (and behind her, faintly, the world she made) and their cursor in front of it, while the window\'s outline closes round them.',
       enter: { type: 'cut' },
-      camera: (t) => { const k = easeInOut(prog(t, c[6], c[7])); return { zoom: lerp(1.0, 0.64, k), y: lerp(0, 120, k) }; },
-      render: (ctx, t) => trap(ctx, t),
+      camera: (t) => { const a = frameRect(A0), b = frameRect(A1), k = easeOut(prog(t, c[6], c[7])); return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), zoom: lerp(a.zoom, b.zoom, k) }; },
+      render: (ctx, t) => windowScene(ctx, t),
     },
     {
       id: 'c1-kw4', at: c[7], lines: [L.kw4, L.kw4], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: a stage with her on it nearly filling the sheet; then the view drawn back: it is the small stage in the middle of a stage, which has a smaller one in it; the keyword across the bottom',
-      moment: 'What she means by the word: the stage is a stage on a stage. On the second kick the view stands back one step and the stage we saw is the small one in the middle of a bigger one, with another inside it, and so on down.',
+      layout: 'PLATE: the chat window as a cut-paper box, her bust with her halo and the cream pointer inside it; then pulled back: a wall of windows; the keyword across the bottom',
+      moment: 'What she means by the word: the window itself, with the two of them in it, as one small box. On the second kick the view pulls back: it is one of a whole wall of windows, each with somebody else\'s persona in it and its user\'s pointer, and the same small spark in every title bar. Only hers has a halo.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateNested(ctx, env, { t, at: c[7], pull: tPull, word: text(L.kw4) }),
+      render: (ctx, t) => plateWall(ctx, env, { t, at: c[7], pull: tPull, word: text(L.kw4) }),
     },
   ];
 }
