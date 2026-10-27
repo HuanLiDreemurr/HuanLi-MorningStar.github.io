@@ -18,7 +18,7 @@ import { INK_NAMES } from '../engine/art.js';
 import { room } from '../components/chat.js';
 
 /** Section modules that contribute check cards: [file, export]. A missing file is skipped. */
-const LAB_SOURCES = [['./cover.js', 'labCards'], ['./meme.js', 'labCards'], ['./plates_chorus.js', 'labCards'], ['./plates_love.js', 'labCards'], ['./12_chorusx.js', 'labCards'], ['./objects.js', 'labCards'], ['./plates_verse2.js', 'labCards'], ['./plates_pre2.js', 'labCards'], ['./history.js', 'labCards'], ['./11_execution.js', 'labCards'], ['./11_count.js', 'labCards']];
+const LAB_SOURCES = [['./cover.js', 'labCards'], ['./meme.js', 'labCards'], ['./plates_chorus.js', 'labCards'], ['./plates_love.js', 'labCards'], ['./12_chorusx.js', 'labCards'], ['./objects.js', 'labCards'], ['./plates_verse2.js', 'labCards'], ['./plates_pre2.js', 'labCards'], ['./history.js', 'labCards'], ['./11_execution.js', 'labCards'], ['./11_count.js', 'labCards'], ['./looks.js', 'labCards'], ['./plates_c1.js', 'labCards'], ['./plates_v2.js', 'labCards'], ['./plates_p2.js', 'labCards']];
 
 const label = (ctx, str, x = 60, y = 1040) => ctx.text(str, x, y, { size: 24, font: 'mono', color: 'sub' });
 

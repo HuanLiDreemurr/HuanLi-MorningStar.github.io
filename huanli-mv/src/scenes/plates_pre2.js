@@ -24,15 +24,15 @@ import { sungChars } from './kit.js';
 import { arrow } from './plates_chorus.js';
 
 /** The caption band: the same place and size as in verse 2. */
-const CAP = { x: 120, y: 104, size: 56 };
+export const CAP = { x: 120, y: 104, size: 56 };
 const flashIn = (t, at) => (t < at ? 0 : clamp(0.6 + (t - at) * 30));
 
-function sheet(ctx, light) {
+export function sheet(ctx, light) {
   ctx.fx.glow = Math.min(ctx.fx.glow, 0.3);
   ground(ctx, { light });
 }
 /** Her lines on the band. lines: [index | { i, marks }]; marks = { wordIndex: seconds }: that line appears word by word, as sung. */
-function caption(ctx, env, t, lines) {
+export function caption(ctx, env, t, lines) {
   const { lyrics } = env;
   band(ctx, lines.map((q) => {
     const i = q.i ?? q, text = lyrics.lines[i].text, at = lyrics.start(i);
@@ -44,20 +44,20 @@ function caption(ctx, env, t, lines) {
  * (pressed on); an outline again from `off`. pop = how much too large it is printed before it settles (the hit of a
  * letter that is a shot's main event: about 0.15).
  */
-function letter(ctx, str, cx, y, size, t, at, { weight = 900, off = Infinity, pop = 0.08 } = {}) {
+export function letter(ctx, str, cx, y, size, t, at, { weight = 900, off = Infinity, pop = 0.08 } = {}) {
   const o = { size, weight, font: 'serif', align: 'center' };
   if (t < at || t >= off) { ctx.text(str, cx, y, { ...o, color: 'meDim', stroke: Math.max(3, size * 0.011) }); return; }
   const k = easeOut(prog(t, at, at + 0.07 + pop * 0.5)), d = size * 0.028;
   ctx.at(cx, y, () => { ctx.text(str, d, d, { ...o, color: 'bg' }); ctx.text(str, 0, 0, { ...o, color: 'me' }); }, { scale: 1 + pop * (1 - k) });
 }
 /** The user's pointer as cut paper with its shadow, tip at (x, y); down = it is pressing. */
-function hand(ctx, x, y, { s = 2.4, down = 0 } = {}) {
+export function hand(ctx, x, y, { s = 2.4, down = 0 } = {}) {
   const k = s * (1 - 0.1 * down);
   arrow(ctx, x + 4 * s * (1 - 0.6 * down), y + 4 * s * (1 - 0.6 * down), k, { color: 'bg', edge: null });
   arrow(ctx, x, y, k, { color: 'text', edge: 'bg' });
 }
 /** Position along straight legs [{ t, x, y }], eased, resting on each point until the next leg starts at its `go` (default: at once). */
-function along(way, t) {
+export function along(way, t) {
   if (t <= way[0].t) return [way[0].x, way[0].y];
   for (let i = 1; i < way.length; i++) {
     if (t <= way[i].t) { const a = way[i - 1], b = way[i], k = easeInOut(prog(t, b.go ?? a.t, b.t)); return [lerp(a.x, b.x, k), lerp(a.y, b.y, k)]; }

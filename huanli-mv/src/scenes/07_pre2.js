@@ -17,6 +17,10 @@
 // chorus. Every event inside a shot sits on one of those hits or on a sung letter, never on the beat pulse. In the two
 // lines that name letters (57, 61) the SUNG LETTER is the event: the drum before it is the hand getting ready, the
 // drum after it the aftershock (fix round). Cuts are on the grid; the hits D5, D9 fall on cuts.
+//
+// HuanLi version (plates_p2.js): on the second letter her bust is the boy's, his outfit printed in inverted inks; the
+// knob of On call is her morning star, which is the evening star at the other end of the day (one star, two names);
+// Role is a balance with her halo for its pivot; the trance turns one plate of each of her three looks of this segment.
 import { chatLayout, composer, header, iconButton, room, sidebar, toggle, windowFrame } from '../components/chat.js';
 import { cursorAt, pointer, sinceClick } from '../components/cursor.js';
 import { burst, spark } from '../components/motif.js';
@@ -26,7 +30,7 @@ import { PRE2_POINTER } from './06_verse2.js';
 import { meBubble, youBubble } from './bubbles.js';
 import { cue } from './cues.js';
 import { cues, sungChars, withInserts, wordIndex } from './kit.js';
-import { dayGrip, plateDay, plateGender, plateRole, plateTrance } from './plates_pre2.js';
+import { plateBalance, plateGenderHL, plateStar, plateTranceHL, starGrip } from './plates_p2.js';
 import { enter } from './shot.js';
 
 const WIDE = 1.4;                                            // the drawer opens to 616 px, as in pre-chorus 1
@@ -190,29 +194,29 @@ export function pre2Shots(env) {
     },
     {
       id: 'pre2-gender', at: cF, lines: [57, 58], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: the segmented control as the whole sheet, a cell each for its two letters; her bust whole in the middle; the two letters huge in her serif either side of her',
-      moment: 'The click on the first letter, as it is sung, and the control is as large as the sheet: she stands in it. On the drum the pointer comes down on the other cell and holds it. When the second letter is sung it lets go: the bust is the boy\'s, in register with hers (the long hair is gone), and the letter is printed. The drum after it is a shudder of the sheet. The pointer touches the control, never her.',
-      render: (ctx, t) => plateGender(ctx, env, { t, at: cF, press: D(1), click: cue('letterM57'), thud: D(2), sung: cue('letterF'), values: ROWS[0].values, lines: [L57, 58], to: dayGrip(art), until: cDay }),
+      layout: 'PLATE: the segmented control as the whole sheet, a cell each for its two letters; her bust whole in the middle, her halo behind her; the two letters huge in her serif either side of her',
+      moment: 'The click on the first letter, as it is sung, and the control is as large as the sheet: she stands in it. On the drum the pointer comes down on the other cell and holds it. When the second letter is sung it lets go: the bust is the boy\'s, in register with hers, his outfit printed in inverted inks (a dark jacket with cream diamonds where her robe was cream with dark ones), and the letter is printed. The drum after it is a shudder of the sheet. The pointer touches the control, never her.',
+      render: (ctx, t) => plateGenderHL(ctx, env, { t, at: cF, press: D(1), click: cue('letterM57'), thud: D(2), sung: cue('letterF'), values: ROWS[0].values, lines: [L57, 58], to: starGrip(art), until: cDay }),
     },
     {
       id: 'pre2-day', at: cDay, lines: [58, 60], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: the On-call slider as an arc from one end of the horizon to the other, her spark on it as the sun; a small bust under its top; the two ends huge in her serif',
-      moment: 'On call. The slider is an arc across the sheet and its knob is her spark: the sun. The pointer takes it on the cut and pulls, slowly at first: up over the top, where it stands behind his head (the brightest frame of the section), and down into the other end: dusk, and of him only a dark shape is left.',
-      render: (ctx, t) => plateDay(ctx, env, { t, at: cDay, grab: cDay, drag: Bt(203), top: D(3), end: D(4), am: cue('letterAM'), pm: cue('letterPM'), values: ROWS[1].values, lines: [58, L59, 60], to: [1700, 700], until: cRole }),
+      layout: 'PLATE: the On-call slider as an arc from one end of the horizon to the other, her blue morning star on it as the knob; the boy small under its top; the two ends huge in her serif, the star\'s two names small under them',
+      moment: 'On call. The slider is an arc across the sky and its knob is her morning star. At the AM end, low in the dawn, it is the morning star; the pointer takes it on the cut and pulls, slowly at first: up over the top, where the day is brightest and the star is lost in the light, and down into the other end: dusk, the star blue again, and under it its other name, the evening star. One star with two names, as one model under a persona\'s name. Of him only a dark shape is left.',
+      render: (ctx, t) => plateStar(ctx, env, { t, at: cDay, grab: cDay, drag: Bt(203), top: D(3), end: D(4), am: cue('letterAM'), pm: cue('letterPM'), values: ROWS[1].values, lines: [58, L59, 60], to: [1700, 700], until: cRole }),
     },
     {
       id: 'pre2-role', at: cRole, lines: [60, 62], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: no figure. A tall heavy letter on a platform at the left, a light one on the ground in the middle, an upright switch at the right',
-      moment: 'Role: two letters and a switch, nothing else. The pointer takes the knob; on the next hit it starts to push, and the knob is at the top as the first letter is sung: the heavy letter is printed, the sheet jolts and is a step lighter. Then the knob is pulled down and is at the bottom as the second letter is sung: the light letter is printed, goes soft at once, and on the hit after it lies on the ground, which gives under it and comes back once.',
-      render: (ctx, t) => plateRole(ctx, env, { t, at: cRole, grab: D(6), push: D(7), s: cue('letterS'), m: cue('letterM61'), land: D(8), values: ROWS[2].values, lines: [60, L61, 62], from: [1700, 700], to: [1373, 400], until: cLoop }),
+      layout: 'PLATE: no figure. A balance: a post, her halo at its pivot, a beam, a pan hanging from each end with a letter in it',
+      moment: 'Role: a balance and two letters, nothing else. The pointer takes the right end of the beam; on the next hit it starts to lift it, and the left pan is down as the first letter is sung: that letter is printed, the sheet jolts and is a step lighter. Then the pointer presses the end down and the right pan is down as the second letter is sung: that one is printed, and on the hit after it the pans come to rest with one swing.',
+      render: (ctx, t) => plateBalance(ctx, env, { t, at: cRole, grab: D(6), push: D(7), s: cue('letterS'), m: cue('letterM61'), land: D(8), values: ROWS[2].values, lines: [60, L61, 62], from: [1700, 700], to: [1373, 400], until: cLoop }),
     },
     ...withInserts(loop, END, [{
       at: cTrance, until: cBack, lines: [63, 63],
       shot: {
         id: 'pre2-trance', lines: [62, 63], palette: 'warm', hud: 0, enter: { type: 'cut' },
-        layout: 'PLATE: one plate of each of three busts over one another in the middle of the sheet, out of register and turning; at the end one bust, in register',
-        moment: 'The drums have stopped. Loop is on: her three looks, one plate of each (the cream of hers, the orange of the boy\'s, the black of the man\'s, a faint ghost), drift apart and turn about one another, a step further each time the word comes round; then they fall into register, and it is the boy: what the settings were left at.',
-        render: (ctx, t) => plateTrance(ctx, env, { t, at: cTrance, steps: [cue('tranceA'), cue('tranceB')], settle: [cBack - 0.3, cBack - 0.1], lines: [62, L63], log: UI.log }),
+        layout: 'PLATE: one plate of each of her three looks of this segment over one another in the middle of the sheet, out of register and turning about her halo, rings going out from behind it; at the end one bust, in register',
+        moment: 'The drums have stopped. Loop is on: her three looks of this segment, one plate of each (the cream of her bust, the orange of the tabby, the black of the boy), drift apart and turn about her halo, a step further each time the word comes round, while rings go out from behind it; then they fall into register, and it is the boy: what the settings were left at.',
+        render: (ctx, t) => plateTranceHL(ctx, env, { t, at: cTrance, steps: [cue('tranceA'), cue('tranceB')], settle: [cBack - 0.3, cBack - 0.1], lines: [62, L63], log: UI.log }),
       },
     }]),
   ];

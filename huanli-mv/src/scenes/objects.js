@@ -225,6 +225,12 @@ export function eggplant(ctx, env, { cx = 960, cy = 540, s = 400, tilt = TILT, o
   return { hull: bodyPts().map(([x, y]) => toScreen(x, y)), top };
 }
 
+/** HuanLi: the end of the eggplant's stem on screen, for the same arguments (where a plant growing it holds it). */
+export function eggplantStem({ cx = 960, cy = 540, s = 400, tilt = TILT } = {}) {
+  const cs = Math.cos(tilt), sn = Math.sin(tilt), X = SPINE(Y0) + 0.06, Y = Y0 + 0.03 - 0.43;
+  return [cx + (X * cs - (Y - 0.1) * sn) * s, cy + (X * sn + (Y - 0.1) * cs) * s];
+}
+
 // ---------------------------------------------------------------------------------------------- tomato
 // Local frame: unit = half its width, calyx up. The body is three ellipses laid over one another (two shoulders and a
 // belly): their union has the dip between the shoulders that the calyx sits in.
@@ -331,6 +337,12 @@ export function tomato(ctx, env, { cx = 960, cy = 540, s = 320, open = 0, give =
   cap(ctx, [stem, cal], SH, Math.max(4, s * 0.015));
   g.globalAlpha = a0;
   return { hull: whole, top };
+}
+
+/** HuanLi: the end of the tomato's stem on screen, for the same arguments (whole, not cut). */
+export function tomatoStem({ cx = 960, cy = 540, s = 320 } = {}) {
+  const cs = Math.cos(T_TILT), sn = Math.sin(T_TILT), x = 0.07, y = -0.735 - 0.31;
+  return [cx + (x * cs - y * sn) * s, cy + (x * sn + y * cs) * s];
 }
 
 // ---------------------------------------------------------------------------------------------- check cards

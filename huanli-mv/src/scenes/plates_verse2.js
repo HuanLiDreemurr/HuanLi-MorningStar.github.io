@@ -25,24 +25,24 @@ const TAU = Math.PI * 2;
 /** Where the picture ends and the foot of the sheet begins. */
 export const FOOT = 846;
 /** The caption band of the verse. */
-const CAP = { x: 120, y: 104, size: 56 };
+export const CAP = { x: 120, y: 104, size: 56 };
 /** A graphic arrives whole within two frames (no white field): 0 before `at`, 1 from the second frame on. */
 const flashIn = (t, at) => (t < at ? 0 : clamp(0.6 + (t - at) * 30));
 
 /** The paper, and the foot of the sheet: a strip one step lighter, where the keyword will stand. */
-function sheet(ctx, light = [930, 450, 600, 'raised', 1]) {
+export function sheet(ctx, light = [930, 450, 600, 'raised', 1]) {
   ctx.fx.glow = Math.min(ctx.fx.glow, 0.3);                           // large flat colour: the palette's warm bloom must not tint it
   ground(ctx, { light });
   ctx.rect(0, FOOT, 1920, 1080 - FOOT, { fill: true, color: 'raised', alpha: 0.32 });
   ctx.line(0, FOOT, 1920, FOOT, { color: 'line', width: 2 });
 }
 /** Her lines that are not keywords, on the band: each from the moment it is sung until the next line starts. */
-function caption(ctx, env, t, lines) {
+export function caption(ctx, env, t, lines) {
   const { lyrics } = env;
   band(ctx, lines.map((i) => ({ text: lyrics.lines[i].text, at: lyrics.start(i), until: lyrics.start(i + 1), n: lyrics.typed(i, t).n })), t, CAP);
 }
 /** What the user is typing while she answers: next = { text, from, to }. One line at the right of the foot, with its caret. */
-function typing(ctx, t, next) {
+export function typing(ctx, t, next) {
   if (!next || t < next.from - 0.25) return;
   const o = { size: 34, weight: 500 }, full = next.text, n = Math.floor(prog(t, next.from, next.to) * full.length + 1e-6);
   const x = 1826 - ctx.measure(full, o), y = 1056, shown = full.slice(0, n);
@@ -50,7 +50,7 @@ function typing(ctx, t, next) {
   if (n < full.length || Math.floor(t * 2.2) % 2 === 0) ctx.rect(x + ctx.measure(shown, o) + 4, y - 29, 3, 36, { fill: true, color: 'text' });
 }
 /** The keyword on the foot of the sheet: the whole word at once, pressed on. Cream = it has been given. */
-const word = (ctx, P, color = 'text') => keyword(ctx, P.word, P.t, { y: 1000, maxW: 1740, maxSize: 214, at: P.hit, color, shade: 'bg', off: [9, 9] });
+export const word = (ctx, P, color = 'text') => keyword(ctx, P.word, P.t, { y: 1000, maxW: 1740, maxSize: 214, at: P.hit, color, shade: 'bg', off: [9, 9] });
 
 // ============================================================================================ the eggplant, the tomato
 /**
@@ -71,7 +71,7 @@ const GIFT = {
     { m: MOL.tocopherol, x: 1350, y: 690, L: 54, t: [0.13, 0.36], row: 2, cap: [1548, 590] },
   ],
 };
-function gift(ctx, env, kind, since) {
+export function gift(ctx, env, kind, since) {
   if (since < 0) return;
   const rows = (env.script.cards_section6 ?? [])[kind === 'tomato' ? 1 : 0]?.rows ?? [], drift = 26 * Math.max(0, since - 0.3);
   for (const q of GIFT[kind]()) {
@@ -110,7 +110,7 @@ export function plateFruit(ctx, env, P) {
 /** f_bust on the sheet; the cat-eared bust and the paws register onto it by the flower in her hair. */
 const FIG = { x: 240, y: 180, w: 840, h: 1120 };
 /** The line her purr stands on, from behind her shoulder to the user's edge of the sheet; lanes the stripes leave on. */
-const PURR = { y: 470, x0: 1118, x1: 1858, h: 238, w: 36, amp: [0.5, 0.82, 0.62, 1, 0.7, 0.92, 0.56, 0.8, 1, 0.66, 0.88, 0.58, 0.44] };
+export const PURR = { y: 470, x0: 1118, x1: 1858, h: 238, w: 36, amp: [0.5, 0.82, 0.62, 1, 0.7, 0.92, 0.56, 0.8, 1, 0.66, 0.88, 0.58, 0.44] };
 
 /**
  * A silhouette printed in code characters: its three inks as three dim flat tones (the figure reads before any
@@ -137,7 +137,7 @@ const stripe = (h, flip) => [[0, -h], [0.5, -0.3 * h], [0.4, 0.5 * h], [0, h], [
  * travelled sideways would sweep its edges across the sheet). P.hit: they turn cream from her outwards, and then every
  * stripe turns on its middle and leaves to the right along a lane of its own; its outline stays where it stood.
  */
-function purr(ctx, P) {
+export function purr(ctx, P) {
   const { t, at, develop, hit } = P, n = PURR.amp.length, pitch = (PURR.x1 - PURR.x0) / (n - 1), since = t - hit, g = ctx.g;
   const drawn = easeOut(prog(t, at + 0.05, at + 0.4));
   ctx.line(PURR.x0 - 30, PURR.y, lerp(PURR.x0 - 30, PURR.x1 + 30, drawn), PURR.y, { color: 'line', width: 3 });      // silent until she is the cat

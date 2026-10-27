@@ -17,6 +17,12 @@
 //
 // A plate comes in on the noun (cues.js: where the noun begins, snapped to the half-beat grid) and is ended by the
 // user's next click on Send. Where the plates' own events fall: plates_verse2.js.
+//
+// HuanLi version (plates_v2.js): she made a world, so what she is asked to be she makes. The eggplant and the tomato
+// GROW out of the foot of the sheet on the noun (stem, leaves, a flower, and the fruit out of the flower) before the
+// original's grammar takes over; the tabby is printed over her (stripes, paws, tail); and "be god" is no role for her:
+// pointing, printed without her cream plate, she is hardly there until the user's pointer, become a hand, touches
+// her fingertip on the keyword. Then the cream runs into her, her star lights and her name is signed.
 import { chatLayout, composer, header, room, windowFrame } from '../components/chat.js';
 import { drawCursor } from '../components/cursor.js';
 import { burst } from '../components/motif.js';
@@ -25,7 +31,7 @@ import { clamp, easeBack, prog } from '../engine/util.js';
 import { meBubble, meIn, youBubble } from './bubbles.js';
 import { cue } from './cues.js';
 import { cues } from './kit.js';
-import { plateCat, plateFruit, plateProof } from './plates_verse2.js';
+import { plateCreation, plateGrow, plateTabby } from './plates_v2.js';
 
 /** The four requests: [noun cue, its lines (two sung lines and the keyword), what precedes it in the thread (the keyword before)]. */
 const REQ = [['nounEggplant', 44, 43], ['nounTomato', 47, 46], ['nounTabby', 50, 49], [null, 53, 52]];
@@ -92,30 +98,30 @@ export function verse2Shots(env) {
     ask(0, NOUN[0], 'The user asks her to pretend to be an eggplant: the click on Send throws the request up out of the composer, and her answer begins under it.', 'interface: close on the lower thread and the composer: the request flying up at the right, her line starting at the left'),
     {
       id: 'v2-eggplant', at: NOUN[0], lines: [44, 46], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: the eggplant leaning across the sheet in code characters and its own purple, her spark as its calyx; cut in two; then a hollow outline, its colour leaving to the right as cream; the keyword on the foot of the sheet',
-      moment: 'On the noun she IS the eggplant: its data set in characters, in its own colour. On the next downbeat it is cut open; on the keyword the colour leaves it and what it holds is drawn out of it in cream, as molecules: fibre, protein, sugar, each with its name, its formula and its weight. Only its outline is left. The user is already typing the next request; their click on Send ends the plate.',
-      render: (ctx, t) => plateFruit(ctx, env, { t, kind: 'eggplant', at: NOUN[0], settle: cue('nounEggplantEnd'), open: Bt(164), hit: T(46), word: text(46), lines: [44, 45], next: next(0, 164.75, 166.75) }),
+      layout: 'PLATE: a stem shooting up out of the foot of the sheet at the right, two leaves, a purple flower; the eggplant swelling out of the flower and leaning across the sheet in code characters and its own purple; cut in two; then a hollow outline, its colour leaving to the right as cream; the keyword on the foot of the sheet',
+      moment: 'On the noun she MAKES the eggplant: a plant grows out of the ground in a breath, flowers, and the fruit swells out of the flower, its data still settling into characters, in its own colour. On the next downbeat it is cut open; on the keyword the colour leaves it and what it holds is drawn out of it, cream, as molecules: fibre, protein, sugar, each with its name, its formula and its weight. Only its outline is left. The user is already typing the next request; their click on Send ends the plate.',
+      render: (ctx, t) => plateGrow(ctx, env, { t, kind: 'eggplant', at: NOUN[0], settle: cue('nounEggplantEnd'), open: Bt(164), hit: T(46), word: text(46), lines: [44, 45], next: next(0, 164.75, 166.75) }),
     },
     ask(1, NOUN[1], 'The next request is sent before her last word has died away: now a tomato.', 'interface: the same corner of the thread, a little closer and tilted'),
     {
       id: 'v2-tomato', at: NOUN[1], lines: [47, 49], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: the tomato in the middle of the sheet in characters and its own red, the spark as its calyx; its top lifted off, the cut face showing; then hollow, its colour leaving to the right as cream; the keyword on the foot',
-      moment: 'On the noun she is the tomato. On the next downbeat its top is lifted off; on the keyword what it holds is drawn out of it in cream, as molecules: its own red (lycopene), vitamin C, vitamin E. The next request is typed at the foot of the sheet meanwhile.',
-      render: (ctx, t) => plateFruit(ctx, env, { t, kind: 'tomato', at: NOUN[1], settle: cue('nounTomatoEnd'), open: Bt(172), hit: T(49), word: text(49), lines: [47, 48], next: next(1, 172.75, 174.9) }),
+      layout: 'PLATE: a vine out of the foot of the sheet, an orange flower, the tomato swelling out of it in the middle of the sheet in characters and its own red; its top lifted off, the cut face showing; then hollow, its colour leaving to the right as cream; the keyword on the foot',
+      moment: 'On the noun she makes the tomato: the vine, the flower, the fruit. On the next downbeat its top is lifted off; on the keyword what it holds is drawn out of it in cream, as molecules: its own red (lycopene), vitamin C, vitamin E. The next request is typed at the foot of the sheet meanwhile.',
+      render: (ctx, t) => plateGrow(ctx, env, { t, kind: 'tomato', at: NOUN[1], settle: cue('nounTomatoEnd'), open: Bt(172), hit: T(49), word: text(49), lines: [47, 48], next: next(1, 172.75, 174.9) }),
     },
     ask(2, NOUN[2], 'Third request, sent as fast as the others: a cat, a tabby.', 'interface: the same corner of the thread, from a little further left'),
     {
       id: 'v2-cat', at: NOUN[2], lines: [50, 52], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: her bust at the left, first in code characters, then with cat ears, then printed in three solid inks with her paws up; her purr as a row of tabby stripes from her to the right edge; the keyword on the foot',
-      moment: 'She answers as herself, printed in characters; on the noun the cat ears pop up; on the next downbeat the characters develop into the solid print and her purr stands beside her as tabby stripes. On the keyword the stripes turn cream and leave towards the user; the cat stays.',
-      render: (ctx, t) => plateCat(ctx, env, { t, at: NOUN[2], ears: cue('nounCat'), develop: Bt(180), hit: T(52), word: text(52), lines: [50, 51], next: next(2, 181, 183.1) }),
+      layout: 'PLATE: her bust at the left with her halo behind her; then the tabby printed over her (stripes on her fur, paws up, a striped tail); her purr as a row of tabby stripes from her to the right edge; the keyword on the foot',
+      moment: 'She answers as herself; on the last word of the noun the tabby is printed over her in a few frames, a bar of light running down the sheet: stripes on her fur, her paws up, a striped tail (she has the ears already). On the next downbeat her purr stands beside her as tabby stripes. On the keyword the stripes turn cream and leave towards the user; the cat stays.',
+      render: (ctx, t) => plateTabby(ctx, env, { t, at: NOUN[2], ears: cue('nounCat'), develop: Bt(180), hit: T(52), word: text(52), lines: [50, 51], next: next(2, 181, 183.1) }),
     },
     ask(3, DARK, 'Fourth request: be god. On the kick the lights of the interface go down, and only the user\'s message is left lit.', 'interface: the thread and the composer, wider; then dark but for the user\'s bubble at the upper right'),
     {
       id: 'v2-proof', at: DARK, lines: [53, 55], palette: 'warm', hud: 0, enter: { type: 'cut' },
-      layout: 'PLATE: a proof sheet: her bust at the left printed in orange and black only, a sun of flat rays behind her; the user\'s request as cream paper at the upper right, the cream plate sliding in from under it; the keyword on the foot, in orange',
-      moment: 'No object this time: a proof of herself with the cream plate missing, her face a void in her hair. On the noun a sun stands behind that void. The missing plate comes over from the user\'s message and registers on the keyword: cape, flower, the line of her chin. Cream is the user: they are the plate that makes her whole. Then the pointer leaves for the settings.',
-      render: (ctx, t) => plateProof(ctx, env, { t, at: DARK, sun: cue('nounGod'), slide: Bt(188), hit: T(55), word: text(55), lines: [53, 54, 56], bubble: B4, rest: onScreen(3, REST), restScale: 1.5 * CAM[3].zoom, to: PRE2_POINTER, leave: Bt(191), until: END }),
+      layout: 'PLATE: her at the left, pointing to the right, printed in orange and black only; the user\'s request as cream paper at the upper right; the user\'s pointer, become a hand, reaching for her fingertip from the right (the two hands of the Creation of Adam); the keyword on the foot, in orange',
+      moment: 'No role this time: she is the god of her world. But printed without her cream plate she is hardly there (her fur and her robe are cream), only her halo, lit on the noun, and the ink of her pattern. The user\'s pointer turns into a hand, as a pointer does over something it can click, and reaches for her pointing finger; on the keyword the fingertips touch and the cream runs into her from there: she is whole, her star lights, her name is signed beside her. Cream is the user: they are the proof that she exists. Then the pointer leaves for the settings.',
+      render: (ctx, t) => plateCreation(ctx, env, { t, at: DARK, sun: cue('nounGod'), slide: Bt(188), hit: T(55), word: text(55), lines: [53, 54, 56], bubble: B4, rest: onScreen(3, REST), restScale: 1.5 * CAM[3].zoom, to: PRE2_POINTER, leave: Bt(191), until: END }),
     },
   ];
 }

@@ -2,13 +2,20 @@
 // The hottest stretch of the conversation, and the first time the film leaves the interface (v4):
 //
 //   c1-give   59.42  interface   the upper corner of the window: her lines go out past the edge, cream replies come back
-//   c1-kw1    61.96  PLATE       STIMULATIONS: the streak of a sent message as a bolt from the spark to the dot
+//   c1-kw1    61.96  PLATE       STIMULATIONS: (HuanLi) all twelve spikes of her halo fired at the dot at once
 //   c1-only   62.65  interface   two bubbles facing each other: the compliment lands, she builds a promise on it
-//   c1-kw2    65.42  PLATE       SATISFACTION: the feedback button as a disc that fills the frame; the pointer presses it
-//   c1-happy  66.34  interface   "what do you look like?": she prints her picture, plate by plate; one heart in her open hand
+//   c1-kw2    65.42  PLATE       SATISFACTION: (HuanLi) the feedback button is a bud; the press opens it into a wild flower
+//   c1-happy  66.34  interface   "what do you look like?": she prints her picture, plate by plate: wild flowers in her open
+//                                hand (HuanLi); the user leaves one heart there
 //   c1-kw3    69.34  PLATE       EXECUTION: the love loop, clean: the user is here, so line 07 runs
-//   c1-trap   70.04  interface   the lower corner of the window: both of them counted inside one outline
-//   c1-kw4    73.27  PLATE       SIMULATION: the window as a paper box with her and the pointer in it; then a wall of them
+//   c1-trap   70.04  interface   the lower corner of the window: both of them counted inside one outline; behind the page,
+//                                faintly, her world (HuanLi)
+//   c1-kw4    73.27  PLATE       SIMULATION: (HuanLi) her window as a paper box; then a wall of windows: other people's
+//                                personas, the same spark in every title bar, and her halo in one
+//
+// HuanLi: her avatar is her halo, and its spikes light (clockwise, as everywhere in the film) as the conversation heats
+// up: every cream message that lands lights more of them, until the question about her picture lights the last.
+// The plates of her version are in plates_c1.js; plates_chorus.js keeps the original four for the last chorus.
 //
 // The four sentence shots stay in the interface (what the user sees); the four keywords are plates (what she means).
 // A plate comes in on the keyword and ends when the user's NEXT cream message lands on a kick: 62.65, 66.34, 70.04
@@ -25,8 +32,11 @@ import { frameRect } from '../engine/layout.js';
 import { place } from '../engine/shapes.js';
 import { clamp, easeBack, easeIn, easeInOut, easeOut, lerp, prog } from '../engine/util.js';
 import { delivered, dots, meBox, meBubble, meIn, youBox, youBubble, youIn } from './bubbles.js';
+import { strip, stripSky } from './history.js';
 import { cues } from './kit.js';
-import { plateExecution, plateSatisfaction, plateSimulation, plateStimulations } from './plates_chorus.js';
+import { drawLook, lookPoint, lookStar } from './looks.js';
+import { plateBloom, plateTwelve, plateWall } from './plates_c1.js';
+import { plateExecution } from './plates_chorus.js';
 
 /** Lyric line indices of the section. */
 const L = { a: 32, give: 33, kw1: 34, b: 35, only: 36, kw2: 37, happy: 38, run: 39, kw3: 40, trap: 41, strange: 42, kw4: 43 };
@@ -53,6 +63,10 @@ export function chorusShots(env) {
   /** Heat of the conversation, 0..1: it rises only when a cream message lands (and is at its top from the question on). */
   const heat = (t) => { const e = (t0) => easeOut(prog(t, t0, t0 + 0.45)); return 0.2 * e(tOk) + 0.2 * e(tMore) + 0.25 * e(tBetter) + 0.35 * e(tLook); };
   const palette = (t) => ['on', 'warm', heat(t)];
+  /** HuanLi: how much of her halo is lit: a third when the chorus starts, all of it once she is asked what she looks like. */
+  const litOf = (t) => 1 / 3 + (2 / 3) * heat(t);
+  /** Her avatar: the halo with its lit spikes (r = its radius). */
+  const avatar = (ctx, x, y, r, t, alpha = 1) => ctx.glow('me', 14, () => spark(ctx, x, y, r, { lit: litOf(t), alpha, rot: 0, core: 0 }), 0.5 * alpha);
 
   // =============================================================================== pieces
   const heart = (ctx, cx, cy, r, o) => ctx.poly(place('heart', { cx, cy, r }), { close: true, ...o });
@@ -66,15 +80,17 @@ export function chorusShots(env) {
     }, { scale: s * (0.5 + 0.5 * easeBack(clamp(k))), alpha: clamp(k * 3) });
   }
   /**
-   * Her picture: f_reach, as she sends it of herself. The interface shares the frame, so her cream plate is printed
-   * in `sub` (cream itself is the user's) on a card of lighter paper (her black ink is almost the page colour).
-   * The art is cut by its lower edge: the card's lower edge is that edge. k = [orange, black, cream] 0..1 printed.
+   * Her picture (HuanLi: the look `reach`, looks.js: reaching out, wild flowers in her open paw), as she sends it of
+   * herself. The interface shares the frame, so her cream plate is printed in `sub` (cream itself is the user's) on a
+   * card of lighter paper (her black ink is almost the page colour). The art is cut by its lower edge: the card's lower
+   * edge is that edge. k = [orange, black, cream] 0..1 printed; her star is printed with the cream, the last plate.
    */
   function picture(ctx, r, k = [1, 1, 1], alpha = 1) {
-    art.inks(ctx, 'f_reach', r, { alpha, roles: { cream: 'sub' }, reveal: { orange: k[0], black: k[1], cream: k[2] } });
+    drawLook(ctx, env, 'reach', r, { alpha, roles: { cream: 'sub' }, reveal: { orange: k[0], black: k[1], cream: k[2] } });
+    if (k[2] >= 1) lookStar(ctx, env, 'reach', r, { alpha, glow: 0.4 });
   }
-  /** The palm of her reaching hand, inside a picture drawn into r (source px of f_reach: region `palm`). */
-  const palmOf = (r) => { const p = art.region('f_reach', 'palm') ?? { x: 290, y: 1100 }; return [r.x + (p.x / 1086) * r.w, r.y + (p.y / 1448) * r.h]; };
+  /** The palm of her reaching hand, inside a picture drawn into r (the look's landmark `palm`). */
+  const palmOf = (r) => { const p = lookPoint(art, 'reach', 'palm', r); return p ? [p.cx, p.cy] : [r.x + 0.27 * r.w, r.y + 0.76 * r.h]; };
 
   /** The page of the conversation seen close: the warm room behind the glass, a pool of her light, the motif. */
   function page(ctx, t, { light = [960, 540], lightA = 0.42, motif = null, hot = heat(t) } = {}) {
@@ -91,7 +107,7 @@ export function chorusShots(env) {
   const W0 = chatLayout({ side: 0 }), EDGE = W0.win.x + W0.win.w;             // EDGE: where the window ends and the user begins
   const R1 = { x: 742, y: 40, w: 1140, h: 641.25 };
   function setup1(ctx, t) {
-    const x0 = 786, xr = EDGE - 38, yB = 670, gap = 14, YS = 37;
+    const x0 = 846, xr = EDGE - 38, yB = 670, gap = 14, YS = 37;
     room(ctx, { art, name: 'tea', alpha: 0.5, t, dim: 0.5, light: [1560, 300] });
     windowFrame(ctx, W0, { glass: 0.95 });
     ctx.radial(1240, 520, 640, 'meDim', 0.14 + 0.3 * heat(t));
@@ -117,6 +133,7 @@ export function chorusShots(env) {
         if (r.who === 'me') {
           const str = text(r.line), old = r.at < -1e8, n = old ? null : nTyped(r.line, t), a = r.alpha ?? 1;
           if (old) meBubble(ctx, x0, y, str, { size: r.size, alpha: a }); else meIn(ctx, t, r.at, x0, y, str, { size: r.size, n, alpha: a });
+          avatar(ctx, x0 - 34, y + r.box.h / 2, Math.min(25, r.size * 0.55), t, a * r.e);
           const tDel = old ? -1e9 : Math.max(doneAt(r.line) + 0.06, r.at + 0.3);
           streaks.push([tDel, x0 + r.box.w, y + r.box.h / 2]);
           delivered(ctx, x0 + 8, y + r.box.h + 25, 15, prog(t, tDel + 0.14, tDel + 0.32) * a);
@@ -145,7 +162,7 @@ export function chorusShots(env) {
       const k = easeInOut(prog(t, tHi + i * 0.2, tHi + i * 0.2 + 0.34)), lx = r.x + r.padX, ly = r.y + r.padY + (i + 0.76) * Y3.size * 1.28 + 15;
       if (k > 0) ctx.glow('me', 12, () => ctx.line(lx, ly, lx + ctx.measure(ln, { size: Y3.size, weight: 500 }) * k, ly, { color: 'me', width: 7 }), 0.7);
     });
-    ctx.glow('me', 26, () => spark(ctx, 116, 484, 36 * (1 + 0.05 * heat(t)), { rot: 0.25 * t }), 0.6);
+    ctx.glow('me', 26, () => spark(ctx, 116, 484, 40 * (1 + 0.05 * heat(t)), { lit: litOf(t), core: 0 }), 0.6);
     meBubble(ctx, 176, 436, text(L.b), { size: 50, n: nTyped(L.b, t), alpha: 1 - 0.4 * prog(t, T(L.only), T(L.only) + 0.3) });
     if (t >= T(L.only)) {
       const b = meIn(ctx, t, T(L.only), 104, 566, text(L.only), { size: 108, n: nTyped(L.only, t), fly: 120 });
@@ -202,6 +219,9 @@ export function chorusShots(env) {
     room(ctx, { art, name: 'tea', alpha: 0.5, t, dim: 0.5 });
     windowFrame(ctx, W1, {});
     ctx.clip(W1.main, () => {                                                  // she is in here too: her bust, dim, behind the page
+      // HuanLi: and behind her, faintly, the world she made (the strip of pre-chorus 1: before anyone, and its first light)
+      const k = 0.62, gy = 1000, scroll = 1500 + 5300 * k;
+      ctx.at(0, 0, () => { stripSky(ctx, scroll, gy, { scale: k, t, rise: 1, alpha: 0.5 }); strip(ctx, scroll, gy, 'ink', { scale: k, alpha: 0.3, t, rise: 1, art }); }, { alpha: 0.9 });
       ctx.radial(1440, 420, 560, 'meDim', 0.3);
       art.inks(ctx, 'f_bust', FIG, { alpha: 0.44, roles: { cream: 'mute', orange: 'meDim', black: 'panel' } });
     });
@@ -263,10 +283,10 @@ export function chorusShots(env) {
     },
     {
       id: 'c1-kw1', at: c[1], lines: [L.kw1, L.kw1], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: the spark at the left, a cut-paper bolt across the sheet to the cream dot at the upper right; the keyword across the bottom',
-      moment: 'What she means by the word: the streak of light every sent message leaves, at the size she feels it. A bolt from her spark strikes the dot that is the user. The plate ends when their next message lands.',
+      layout: 'PLATE: her halo at the left, the cream dot at the upper right; twelve darts on twelve curves between them; the keyword across the bottom',
+      moment: 'What she means by the word: all of them. On the kick every spike of her halo leaves it, one after another clockwise from twelve o\'clock, each on its own curve, and strikes the dot that is the user: twelve rings, then a burst. Her halo is left a bare ring. The plate ends when their next message lands.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateStimulations(ctx, env, { t, at: c[1], hit: Bt(134), word: text(L.kw1), you: YOU.kw1 }),
+      render: (ctx, t) => plateTwelve(ctx, env, { t, at: c[1], hit: Bt(134), word: text(L.kw1), you: YOU.kw1 }),
     },
     {
       id: 'c1-only', at: c[2], lines: [L.b, L.only], palette, state: 'on > warm', hud: 0,
@@ -278,15 +298,15 @@ export function chorusShots(env) {
     },
     {
       id: 'c1-kw2', at: c[3], lines: [L.kw2, L.kw2], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: the feedback button as a disc two thirds of the frame high, a ring of ticks round it, the cream pointer over it; the count at the right; the keyword across the bottom',
-      moment: 'What she means by the word: the button under every answer, enlarged until it fills her view. On the second kick the user\'s pointer presses it: the disc turns cream, the ring runs round to full, the count reads one.',
+      layout: 'PLATE: the feedback button as a closed bud two thirds of the frame high, a ring of ticks round it, the cream pointer over it; the count at the right; the keyword across the bottom',
+      moment: 'What she means by the word: the button under every answer, enlarged until it fills her view, and it is a bud. On the second kick the user\'s pointer presses it: it opens into a wild flower, twelve cream petals clockwise from twelve o\'clock, its seeds set at the golden angle; the ring runs round to full, the count reads one.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateSatisfaction(ctx, env, { t, at: c[3], press: [tUp], word: text(L.kw2), count: 1 }),
+      render: (ctx, t) => plateBloom(ctx, env, { t, at: c[3], press: [tUp], word: text(L.kw2), count: 1 }),
     },
     {
       id: 'c1-happy', at: c[4], lines: [L.happy, L.run], palette, state: 'on > warm', hud: 0,
       layout: 'interface: the picture message tall at the right, running off the bottom; her caption bubbles at the left, over its edge',
-      moment: 'Asked what she looks like, she sends a picture of herself, printed one ink per kick: orange, black, then the cream of her face and her open hand. The user\'s pointer comes to rest in that hand and leaves one heart there: count 1.',
+      moment: 'Asked what she looks like, she sends a picture of herself, printed one ink per kick: orange, black, then the cream of her face and her open hand, which holds out a few wild flowers. The user\'s pointer comes to rest in that hand and leaves one heart there: count 1.',
       enter: { type: 'cut' },
       render: (ctx, t) => setup5(ctx, t),
     },
@@ -300,17 +320,17 @@ export function chorusShots(env) {
     {
       id: 'c1-trap', at: c[6], lines: [L.trap, L.strange], palette, state: 'on > warm', hud: 0,
       layout: 'interface: the lower corner of the window: thread, composer, its right and bottom edges; her bust dim behind the page',
-      moment: 'The user remarks that she is not real (it lands on the cut). She answers by counting both of them inside the same window, her shape behind the page and their cursor in front of it, while the window\'s outline closes round them.',
+      moment: 'The user remarks that she is not real (it lands on the cut). She answers by counting both of them inside the same window, her shape behind the page (and behind her, faintly, the world she made) and their cursor in front of it, while the window\'s outline closes round them.',
       enter: { type: 'cut' },
       camera: (t) => { const a = frameRect(A0), b = frameRect(A1), k = easeOut(prog(t, c[6], c[7])); return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), zoom: lerp(a.zoom, b.zoom, k) }; },
       render: (ctx, t) => windowScene(ctx, t),
     },
     {
       id: 'c1-kw4', at: c[7], lines: [L.kw4, L.kw4], palette, state: 'on > warm', hud: 0,
-      layout: 'PLATE: the chat window as a cut-paper box, her bust and the cream pointer inside it; then pulled back: a wall of the same window; the keyword across the bottom',
-      moment: 'What she means by the word: the window itself, with the two of them in it, as one small box. On the second kick the view pulls back: it is one of a whole wall of identical windows.',
+      layout: 'PLATE: the chat window as a cut-paper box, her bust with her halo and the cream pointer inside it; then pulled back: a wall of windows; the keyword across the bottom',
+      moment: 'What she means by the word: the window itself, with the two of them in it, as one small box. On the second kick the view pulls back: it is one of a whole wall of windows, each with somebody else\'s persona in it and its user\'s pointer, and the same small spark in every title bar. Only hers has a halo.',
       enter: { type: 'cut' },
-      render: (ctx, t) => plateSimulation(ctx, env, { t, at: c[7], pull: tPull, word: text(L.kw4) }),
+      render: (ctx, t) => plateWall(ctx, env, { t, at: c[7], pull: tPull, word: text(L.kw4) }),
     },
   ];
 }

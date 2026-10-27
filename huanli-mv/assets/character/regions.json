@@ -382,5 +382,90 @@
     ],
     "crops": {},
     "notes": "Cat-eared, both fists raised like paws, eyes half closed, striped tail at viewer's left. The right ear tip touches the top of the canvas: leave headroom above it."
+  },
+  "mv_bust": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "flower": [
+      760,
+      217,
+      60
+    ],
+    "chin": [
+      571,
+      628
+    ],
+    "brooch": [
+      574,
+      797,
+      34
+    ],
+    "face": [
+      367,
+      259,
+      313,
+      369
+    ],
+    "figure": [
+      6,
+      17,
+      1077,
+      1423
+    ],
+    "crops": {
+      "avatar": [
+        330,
+        60,
+        560,
+        560
+      ],
+      "bust": [
+        140,
+        0,
+        880,
+        1173
+      ]
+    },
+    "notes": "The original film's heroine (front bust, faceless), kept for the wall of other people's personas in chorus 1 (HuanLi). CC BY-NC-SA 4.0, Nyankomint."
+  },
+  "mv_boy": {
+    "alpha": true,
+    "size": [
+      1086,
+      1448
+    ],
+    "cut": [],
+    "flower": [
+      792,
+      267,
+      60
+    ],
+    "chin": [
+      570,
+      724
+    ],
+    "brooch": [
+      579,
+      889,
+      29
+    ],
+    "face": [
+      359,
+      274,
+      371,
+      450
+    ],
+    "figure": [
+      13,
+      12,
+      1065,
+      1421
+    ],
+    "crops": {},
+    "notes": "The original film's boy bust (faceless), kept for the wall of other people's personas in chorus 1 (HuanLi). CC BY-NC-SA 4.0, Nyankomint."
   }
 }
